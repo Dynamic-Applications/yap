@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
 
         const result = await sql`SELECT * FROM users WHERE email = ${email}`;
         const user = result[0];
+        console.log("User found:", !!user);
 
         if (!user)
             return NextResponse.json(
@@ -22,6 +23,7 @@ export async function POST(req: NextRequest) {
             );
 
         const valid = await comparePassword(password, user.password);
+        console.log("Password valid:", valid);
         if (!valid)
             return NextResponse.json(
                 { error: "Invalid credentials" },
