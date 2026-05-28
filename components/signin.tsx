@@ -1,20 +1,60 @@
+"use client";
+
 import { LogoIcon } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-export default function LoginPage() {
+export default function SignInPage() {
+    const router = useRouter();
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+        setLoading(true);
+
+        try {
+            const res = await fetch("/api/auth/signin", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                setError(data.error || "Something went wrong");
+                return;
+            }
+
+            router.push("/chat");
+        } catch (err) {
+            setError("Something went wrong");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <section className="flex min-h-screen bg-zinc-50 px-4 py-16 md:py-32 dark:bg-transparent">
-            <form action="" className="max-w-92 m-auto h-fit w-full">
+            <form
+                onSubmit={handleSubmit}
+                className="max-w-92 m-auto h-fit w-full"
+            >
                 <div className="p-6">
                     <div>
                         <Link href="/" aria-label="go home">
                             <LogoIcon />
                         </Link>
                         <h1 className="mb-1 mt-4 text-xl font-semibold">
-                            Sign In to Tailark
+                            Sign In
                         </h1>
                         <p>Welcome back! Sign in to continue</p>
                     </div>
@@ -55,32 +95,56 @@ export default function LoginPage() {
                     <div className="my-6 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                         <hr className="border-dashed" />
                         <span className="text-muted-foreground text-xs">
-                            Or continue With
+                            Or continue with
                         </span>
                         <hr className="border-dashed" />
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="block text-sm">
-                                Email
-                            </Label>
+                            <Label htmlFor="email">Email</Label>
                             <Input
+                                id="email"
+                                name="email"
                                 type="email"
                                 required
-                                name="email"
-                                id="email"
+                                placeholder="you@example.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                             />
                         </div>
 
-                        <Button className="w-full">Continue</Button>
+                        <div className="space-y-2">
+                            <Label htmlFor="password">Password</Label>
+                            <Input
+                                id="password"
+                                name="password"
+                                type="password"
+                                required
+                                placeholder="Your password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                        </div>
+
+                        {error && (
+                            <p className="text-sm text-red-500">{error}</p>
+                        )}
+
+                        <Button
+                            className="w-full"
+                            type="submit"
+                            disabled={loading}
+                        >
+                            {loading ? "Signing in..." : "Sign in"}
+                        </Button>
                     </div>
                 </div>
 
                 <p className="text-accent-foreground text-center text-sm">
-                    Don't have an account ?
+                    Don't have an account?
                     <Button asChild variant="link" className="px-2">
-                        <Link href="#">Create account</Link>
+                        <Link href="/auth/signup">Create account</Link>
                     </Button>
                 </p>
             </form>
