@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,40 +20,53 @@ export default function AuthPage() {
         e.preventDefault();
         setLoading(true);
         setError("");
-        const res = await signIn("credentials", {
-            email,
-            password,
-            redirect: false,
-        });
-        setLoading(false);
-        if (res?.error) setError("Invalid email or password");
-        else router.push("/");
+
+        try {
+            const res = await fetch("/api/auth/signin", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setError(data.error || "Invalid email or password");
+                return;
+            }
+            router.push("/chat");
+        } catch {
+            setError("Something went wrong");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSignUp = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError("");
-        const res = await fetch("/api/auth/signup", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, email, password }),
-        });
-        if (!res.ok) {
+
+        try {
+            const res = await fetch("/api/auth/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, email, password }),
+            });
             const data = await res.json();
-            setError(data.message || "Something went wrong");
+            if (!res.ok) {
+                setError(data.error || "Something went wrong");
+                return;
+            }
+            router.push("/chat");
+        } catch {
+            setError("Something went wrong");
+        } finally {
             setLoading(false);
-            return;
         }
-        await signIn("credentials", { email, password, redirect: false });
-        setLoading(false);
-        router.push("/");
     };
 
     return (
         <main className="min-h-screen flex items-center justify-center px-4">
             <div className="w-full max-w-sm">
-                {/* Logo / Title */}
                 <div className="text-center mb-8">
                     <h1 className="text-2xl font-semibold tracking-tight">
                         Yap
@@ -66,7 +78,6 @@ export default function AuthPage() {
                     </p>
                 </div>
 
-                {/* Tabs */}
                 <div className="flex rounded-lg border border-gray-200 p-1 mb-6 bg-gray-50">
                     <button
                         onClick={() => {
@@ -96,7 +107,6 @@ export default function AuthPage() {
                     </button>
                 </div>
 
-                {/* Sign In Form */}
                 {tab === "signin" && (
                     <form onSubmit={handleSignIn} className="space-y-4">
                         <div className="space-y-2">
@@ -153,7 +163,6 @@ export default function AuthPage() {
                     </form>
                 )}
 
-                {/* Sign Up Form */}
                 {tab === "signup" && (
                     <form onSubmit={handleSignUp} className="space-y-4">
                         <div className="space-y-2">
