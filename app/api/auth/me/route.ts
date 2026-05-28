@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
         if (!user)
             return NextResponse.json({ success: false }, { status: 401 });
 
-        return NextResponse.json({ success: true, user });
+        return NextResponse.json({ success: true, user: { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt } });
     } catch {
         return NextResponse.json({ success: false }, { status: 401 });
     }

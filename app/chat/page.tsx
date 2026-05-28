@@ -1,8 +1,12 @@
 "use client";
 import MobileNav from "@/components/MobileNav";
 import ChatLayout from "@/components/ChatLayout";
-import { redirect } from "next/navigation";
 
 export default function Main() {
-  redirect("/auth/signin");
+    return (
+        <>
+            <ChatLayout />
+            <MobileNav />
+        </>
+    );
 }

@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 const tabs = [
     { label: "Chats", icon: MessageCircle, href: "/chat" },
     { label: "Groups", icon: Users, href: "/groups" },
-    { label: "Profile", icon: UserCircle, href: "/auth/signin" },
+    { label: "Profile", icon: UserCircle, href: "/profile" },
 ];
 
 export default function MobileNav() {
