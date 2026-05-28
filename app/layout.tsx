@@ -1,22 +1,31 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
+import Providers from "@/components/Providers";
+import { Geist, Geist_Mono } from "next/font/google";
 
-const inter = Inter({ subsets: ["latin"] });
+const geistSans = Geist({
+    variable: "--font-geist-sans",
+    subsets: ["latin"],
+});
 
-export const metadata: Metadata = {
-    title: "Yap — Chat with anyone",
-    description: "A modern, mobile-first messenger.",
-};
+const geistMono = Geist_Mono({
+    variable: "--font-geist-mono",
+    subsets: ["latin"],
+});
 
 export default function RootLayout({
     children,
-}: {
+}: Readonly<{
     children: React.ReactNode;
-}) {
+}>) {
     return (
         <html lang="en">
-            <body className={inter.className}>{children}</body>
+            <body
+                className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+            >
+                <Providers>
+                    <main className="pb-16">{children}</main>
+                </Providers>
+            </body>
         </html>
     );
 }
