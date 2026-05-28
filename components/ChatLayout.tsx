@@ -10,11 +10,26 @@ interface Message {
     timestamp: string;
 }
 
+interface User {
+    id: string;
+    name: string;
+    email: string;
+}
+
 export default function ChatLayout() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState("");
     const [connected, setConnected] = useState(false);
+    const [user, setUser] = useState<User | null>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        fetch("/api/auth/me")
+            .then((r) => r.json())
+            .then((data) => {
+                if (data.success) setUser(data.user);
+            });
+    }, []);
 
     useEffect(() => {
         const pusherClient = getPusherClient();
@@ -23,7 +38,6 @@ export default function ChatLayout() {
         pusherClient.connection.bind("connected", () => setConnected(true));
         pusherClient.connection.bind("disconnected", () => setConnected(false));
 
-        // set initial state
         if (pusherClient.connection.state === "connected") setConnected(true);
 
         channel.bind("message", (data: Message) => {
@@ -42,20 +56,29 @@ export default function ChatLayout() {
 
     const sendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!newMessage.trim()) return;
+        if (!newMessage.trim() || !user) return;
 
         await fetch("/api/messages", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 message: newMessage,
-                userId: "anonymous",
-                name: "Anonymous",
+                userId: user.id,
+                name: user.name,
             }),
         });
 
         setNewMessage("");
     };
+
+    function getInitials(name: string) {
+        return name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2);
+    }
 
     return (
         <main className="flex flex-col h-[calc(100vh-64px)]">
@@ -78,37 +101,71 @@ export default function ChatLayout() {
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                    {messages.map((msg, index) => (
-                        <div
-                            key={index}
-                            className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all"
-                        >
-                            <p className="text-xs text-gray-400 mb-1">
-                                {msg.name}
-                            </p>
-                            <p className="text-gray-800 font-medium">
-                                {msg.message}
-                            </p>
-                        </div>
-                    ))}
+                    {messages.map((msg, index) => {
+                        const isMe = msg.userId === user?.id;
+                        return (
+                            <div
+                                key={index}
+                                className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}
+                            >
+                                {/* Avatar */}
+                                <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                    {getInitials(msg.name)}
+                                </div>
+
+                                {/* Bubble */}
+                                <div
+                                    className={`max-w-[70%] ${isMe ? "items-end" : "items-start"} flex flex-col gap-1`}
+                                >
+                                    <span
+                                        className={`text-xs text-gray-400 ${isMe ? "text-right" : "text-left"}`}
+                                    >
+                                        {isMe ? "You" : msg.name}
+                                    </span>
+                                    <div
+                                        className={`px-4 py-2 rounded-2xl text-sm ${
+                                            isMe
+                                                ? "bg-blue-500 text-white rounded-br-sm"
+                                                : "bg-white border border-gray-100 text-gray-800 rounded-bl-sm shadow-sm"
+                                        }`}
+                                    >
+                                        {msg.message}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
                     <div ref={bottomRef} />
                 </div>
 
                 {/* Input */}
-                <form onSubmit={sendMessage} className="p-6">
-                    <div className="flex gap-3">
+                <form
+                    onSubmit={sendMessage}
+                    className="p-4 border-t border-gray-100"
+                >
+                    <div className="flex gap-3 items-center">
+                        {user && (
+                            <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                {getInitials(user.name)}
+                            </div>
+                        )}
                         <input
                             type="text"
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                             className="flex-1 rounded-lg border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                            placeholder="Type your message..."
+                            placeholder={
+                                user
+                                    ? "Type your message..."
+                                    : "Sign in to chat"
+                            }
+                            disabled={!user}
                         />
                         <button
                             type="submit"
-                            disabled={!connected}
+                            disabled={!connected || !user}
                             className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                                connected
+                                connected && user
                                     ? "bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 shadow-sm hover:shadow"
                                     : "bg-gray-200 text-gray-400 cursor-not-allowed"
                             }`}
