@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { pusherClient } from "@/lib/pusher-client";
+import { getPusherClient } from "@/lib/pusher-client";
 
 interface Message {
     message: string;
@@ -17,6 +17,7 @@ export default function ChatLayout() {
     const bottomRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        const pusherClient = getPusherClient();
         const channel = pusherClient.subscribe("chat");
 
         pusherClient.connection.bind("connected", () => setConnected(true));
