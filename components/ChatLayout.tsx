@@ -1,98 +1,100 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
+import { pusherClient } from "@/lib/pusher-client";
+
+interface Message {
+    message: string;
+    userId: string;
+    name: string;
+    timestamp: string;
+}
 
 export default function ChatLayout() {
-    const [messages, setMessages] = useState<string[]>([]);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState("");
-    const [connectionStatus, setConnectionStatus] = useState<
-        "connected" | "disconnected" | "connecting"
-    >("connecting");
-    const wsRef = useRef<WebSocket | null>(null);
+    const [connected, setConnected] = useState(false);
+    const bottomRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const ws = new WebSocket(`${protocol}//${window.location.host}/api/ws`);
-        wsRef.current = ws;
+        const channel = pusherClient.subscribe("chat");
 
-        ws.onopen = () => {
-            setConnectionStatus("connected");
-        };
+        pusherClient.connection.bind("connected", () => setConnected(true));
+        pusherClient.connection.bind("disconnected", () => setConnected(false));
 
-        ws.onclose = () => {
-            setConnectionStatus("disconnected");
-        };
+        // set initial state
+        if (pusherClient.connection.state === "connected") setConnected(true);
 
-        ws.onmessage = (event) => {
-            setMessages((prevMessages) => [...prevMessages, event.data]);
-        };
-
-        const pingInterval = setInterval(() => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(`{"event":"ping"}`);
-            }
-        }, 29000);
+        channel.bind("message", (data: Message) => {
+            setMessages((prev) => [...prev, data]);
+        });
 
         return () => {
-            clearInterval(pingInterval);
-            if (wsRef.current) {
-                wsRef.current.close();
-            }
+            channel.unbind_all();
+            pusherClient.unsubscribe("chat");
         };
     }, []);
 
-    const sendMessage = (e: React.FormEvent<HTMLFormElement>) => {
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
+
+    const sendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!newMessage.trim()) return;
 
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(newMessage);
-            setNewMessage("");
-        }
+        await fetch("/api/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                message: newMessage,
+                userId: "anonymous",
+                name: "Anonymous",
+            }),
+        });
+
+        setNewMessage("");
     };
 
     return (
         <main className="flex flex-col h-[calc(100vh-64px)]">
             <div className="w-full flex flex-col flex-1 overflow-hidden">
+                {/* Status bar */}
                 <div
                     className={`px-6 py-3 text-sm font-medium ${
-                        connectionStatus === "connected"
+                        connected
                             ? "bg-green-50 text-green-700 border-b border-green-100"
-                            : connectionStatus === "disconnected"
-                              ? "bg-red-50 text-red-700 border-b border-red-100"
-                              : "bg-yellow-50 text-yellow-700 border-b border-yellow-100"
+                            : "bg-yellow-50 text-yellow-700 border-b border-yellow-100"
                     }`}
                 >
                     <div className="flex items-center gap-2">
                         <div
-                            className={`w-2 h-2 rounded-full ${
-                                connectionStatus === "connected"
-                                    ? "bg-green-500"
-                                    : connectionStatus === "disconnected"
-                                      ? "bg-red-500"
-                                      : "bg-yellow-500"
-                            }`}
-                        ></div>
-                        Status: {connectionStatus}
+                            className={`w-2 h-2 rounded-full ${connected ? "bg-green-500" : "bg-yellow-500"}`}
+                        />
+                        {connected ? "Connected" : "Connecting..."}
                     </div>
                 </div>
 
+                {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                    {messages.map((message, index) => (
+                    {messages.map((msg, index) => (
                         <div
                             key={index}
-                            className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md"
+                            className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all"
                         >
+                            <p className="text-xs text-gray-400 mb-1">
+                                {msg.name}
+                            </p>
                             <p className="text-gray-800 font-medium">
-                                {message}
+                                {msg.message}
                             </p>
                         </div>
                     ))}
+                    <div ref={bottomRef} />
                 </div>
 
-                <form
-                    onSubmit={sendMessage}
-                    className="p-6"
-                >
+                {/* Input */}
+                <form onSubmit={sendMessage} className="p-6">
                     <div className="flex gap-3">
                         <input
                             type="text"
@@ -103,9 +105,9 @@ export default function ChatLayout() {
                         />
                         <button
                             type="submit"
-                            disabled={connectionStatus !== "connected"}
+                            disabled={!connected}
                             className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                                connectionStatus === "connected"
+                                connected
                                     ? "bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 shadow-sm hover:shadow"
                                     : "bg-gray-200 text-gray-400 cursor-not-allowed"
                             }`}
