@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
             );
 
         const existing = await sql`SELECT id FROM users WHERE email = ${email}`;
-        if (existing.rows.length > 0)
+        if (existing.length > 0)
             return NextResponse.json(
                 { error: "Email already in use" },
                 { status: 409 },
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
             VALUES (${email}, ${hashed}, ${name ?? null})
             RETURNING id, email, name
         `;
-        const user = result.rows[0];
+        const user = result[0];
         const token = signToken(user.id);
 
         const res = NextResponse.json({ success: true, user });

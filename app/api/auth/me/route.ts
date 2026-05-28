@@ -9,10 +9,9 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ success: false }, { status: 401 });
 
         const { userId } = verifyToken(token);
-        const result = await sql`
-            SELECT id, email, name FROM users WHERE id = ${userId}
-        `;
-        const user = result.rows[0];
+        const result =
+            await sql`SELECT id, email, name FROM users WHERE id = ${userId}`;
+        const user = result[0];
 
         if (!user)
             return NextResponse.json({ success: false }, { status: 401 });

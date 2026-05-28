@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
             );
 
         const result = await sql`SELECT * FROM users WHERE email = ${email}`;
-        const user = result.rows[0];
+        const user = result[0];
 
         if (!user)
             return NextResponse.json(
