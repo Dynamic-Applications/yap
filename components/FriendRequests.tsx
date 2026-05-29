@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getPusherClient } from "@/lib/pusher-client";
+import { useRouter } from "next/navigation";
 
 interface PendingRequest {
     id: string;
@@ -23,6 +24,7 @@ export default function FriendRequests({ userId }: { userId: string }) {
     const [pending, setPending] = useState<PendingRequest[]>([]);
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
         fetch("/api/friends")
@@ -196,6 +198,7 @@ export default function FriendRequests({ userId }: { userId: string }) {
                         {friends.map((friend) => (
                             <div
                                 key={friend.id}
+                                onClick={() => router.push(`/chat/${friend.id}`)}
                                 className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-white"
                             >
                                 <div className="h-9 w-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold">

@@ -16,39 +16,53 @@ interface User {
     email: string;
 }
 
-export default function ChatLayout() {
+interface ChatLayoutProps {
+    friendId: string;
+    friendName: string;
+}
+
+export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState("");
     const [connected, setConnected] = useState(false);
     const [user, setUser] = useState<User | null>(null);
+    const [channel, setChannel] = useState<string>("");
     const bottomRef = useRef<HTMLDivElement>(null);
 
+    // Fetch current user
     useEffect(() => {
         fetch("/api/auth/me")
             .then((r) => r.json())
             .then((data) => {
-                if (data.success) setUser(data.user);
+                if (data.success) {
+                    setUser(data.user);
+                    const ch = [data.user.id, friendId].sort().join("-");
+                    setChannel(ch);
+                }
             });
-    }, []);
+    }, [friendId]);
 
+    // Subscribe to Pusher channel
     useEffect(() => {
+        if (!channel) return;
+
         const pusherClient = getPusherClient();
-        const channel = pusherClient.subscribe("chat");
+        const ch = pusherClient.subscribe(channel);
 
         pusherClient.connection.bind("connected", () => setConnected(true));
         pusherClient.connection.bind("disconnected", () => setConnected(false));
 
         if (pusherClient.connection.state === "connected") setConnected(true);
 
-        channel.bind("message", (data: Message) => {
+        ch.bind("message", (data: Message) => {
             setMessages((prev) => [...prev, data]);
         });
 
         return () => {
-            channel.unbind_all();
-            pusherClient.unsubscribe("chat");
+            ch.unbind_all();
+            pusherClient.unsubscribe(channel);
         };
-    }, []);
+    }, [channel]);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -56,7 +70,7 @@ export default function ChatLayout() {
 
     const sendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!newMessage.trim() || !user) return;
+        if (!newMessage.trim() || !user || !channel) return;
 
         await fetch("/api/messages", {
             method: "POST",
@@ -65,6 +79,7 @@ export default function ChatLayout() {
                 message: newMessage,
                 userId: user.id,
                 name: user.name,
+                channel,
             }),
         });
 
@@ -72,6 +87,7 @@ export default function ChatLayout() {
     };
 
     function getInitials(name: string) {
+        if (!name) return "?";
         return name
             .split(" ")
             .map((n) => n[0])
@@ -83,19 +99,18 @@ export default function ChatLayout() {
     return (
         <main className="flex flex-col h-[calc(100vh-64px)]">
             <div className="w-full flex flex-col flex-1 overflow-hidden">
-                {/* Status bar */}
-                <div
-                    className={`px-6 py-3 text-sm font-medium ${
-                        connected
-                            ? "bg-green-50 text-green-700 border-b border-green-100"
-                            : "bg-yellow-50 text-yellow-700 border-b border-yellow-100"
-                    }`}
-                >
-                    <div className="flex items-center gap-2">
-                        <div
-                            className={`w-2 h-2 rounded-full ${connected ? "bg-green-500" : "bg-yellow-500"}`}
-                        />
-                        {connected ? "Connected" : "Connecting..."}
+                {/* Header */}
+                <div className="px-6 py-4 border-b border-gray-100 bg-white flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold">
+                        {getInitials(friendName)}
+                    </div>
+                    <div>
+                        <p className="text-sm font-semibold">{friendName}</p>
+                        <p
+                            className={`text-xs ${connected ? "text-green-500" : "text-yellow-500"}`}
+                        >
+                            {connected ? "Connected" : "Connecting..."}
+                        </p>
                     </div>
                 </div>
 
@@ -108,18 +123,13 @@ export default function ChatLayout() {
                                 key={index}
                                 className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}
                             >
-                                {/* Avatar */}
                                 <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                                     {getInitials(msg.name)}
                                 </div>
-
-                                {/* Bubble */}
                                 <div
-                                    className={`max-w-[70%] ${isMe ? "items-end" : "items-start"} flex flex-col gap-1`}
+                                    className={`max-w-[70%] flex flex-col gap-1 ${isMe ? "items-end" : "items-start"}`}
                                 >
-                                    <span
-                                        className={`text-xs text-gray-400 ${isMe ? "text-right" : "text-left"}`}
-                                    >
+                                    <span className="text-xs text-gray-400">
                                         {isMe ? "You" : msg.name}
                                     </span>
                                     <div
@@ -156,7 +166,7 @@ export default function ChatLayout() {
                             className="flex-1 rounded-lg border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                             placeholder={
                                 user
-                                    ? "Type your message..."
+                                    ? `Message ${friendName}...`
                                     : "Sign in to chat"
                             }
                             disabled={!user}
