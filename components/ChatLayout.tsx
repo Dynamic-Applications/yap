@@ -18,10 +18,11 @@ interface User {
 
 interface ChatLayoutProps {
     friendId?: string;
+    groupId?: string;
     friendName?: string;
 }
 
-export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
+export default function ChatLayout({ friendId, groupId, friendName }: ChatLayoutProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState("");
     const [connected, setConnected] = useState(false);
@@ -31,11 +32,10 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
 
     // Fetch current user
     useEffect(() => {
-        if (!friendId) return;
+        if (!friendId && !groupId) return;
 
         setMessages([]);
         setConnected(false);
-
         let currentChannel = "";
 
         fetch("/api/auth/me")
@@ -44,7 +44,11 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
                 if (!data.success) return;
                 setUser(data.user);
 
-                const ch = [data.user.id, friendId].sort().join("-");
+                // Group chat uses group-{id}, DM uses sorted user ids
+                const ch = groupId
+                    ? `group-${groupId}`
+                    : [data.user.id, friendId].sort().join("-");
+
                 currentChannel = ch;
                 setChannel(ch);
 
@@ -64,8 +68,6 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
                     });
 
                 const pusherClient = getPusherClient();
-
-                // Unsubscribe first to clear any existing listeners on this channel
                 pusherClient.unsubscribe(ch);
                 const pusherChannel = pusherClient.subscribe(ch);
 
@@ -74,11 +76,9 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
 
                 pusherClient.connection.bind("connected", onConnected);
                 pusherClient.connection.bind("disconnected", onDisconnected);
-
                 if (pusherClient.connection.state === "connected")
                     setConnected(true);
 
-                // unbind ALL previous message handlers before binding a new one
                 pusherChannel.unbind("message");
                 pusherChannel.bind("message", (data: Message) => {
                     setMessages((prev) => [...prev, data]);
@@ -87,13 +87,11 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
 
         return () => {
             const pusherClient = getPusherClient();
-            if (currentChannel) {
-                pusherClient.unsubscribe(currentChannel);
-            }
+            if (currentChannel) pusherClient.unsubscribe(currentChannel);
             pusherClient.connection.unbind("connected");
             pusherClient.connection.unbind("disconnected");
         };
-    }, [friendId]);
+    }, [friendId, groupId]);
     
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });

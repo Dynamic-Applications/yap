@@ -4,16 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import MobileNav from "@/components/MobileNav";
+import AvatarUpload from "@/components/AvatarUpload";
 
 interface ProfileUser {
     id: string;
     email: string;
     name: string;
     role: "User" | "Admin" | "SuperAdmin";
-    createdAt: string;
+    created_at: string; // fixed: was createdAt
+    avatar_url?: string;
 }
-
-
 
 export default function ProfilePage() {
     const router = useRouter();
@@ -62,11 +62,19 @@ export default function ProfilePage() {
                 <ArrowLeft size={16} />
                 Back
             </button>
-            {/* Avatar placeholder */}
+
+            {/* Avatar + name */}
             <div className="flex items-center gap-5 mb-10">
-                <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center text-2xl font-semibold text-foreground">
-                    {profile.name.charAt(0).toUpperCase()}
-                </div>
+                <AvatarUpload
+                    currentAvatar={profile.avatar_url}
+                    name={profile.name}
+                    size={64}
+                    onUpload={(url) =>
+                        setProfile((prev) =>
+                            prev ? { ...prev, avatar_url: url } : prev,
+                        )
+                    }
+                />
                 <div>
                     <h1 className="text-2xl font-bold text-foreground">
                         {profile.name}
@@ -74,8 +82,12 @@ export default function ProfilePage() {
                     <p className="text-sm text-muted-foreground">
                         {profile.email}
                     </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                        Click avatar to change photo
+                    </p>
                 </div>
             </div>
+
             {/* Info card */}
             <div className="rounded-xl border border-border bg-card p-6 space-y-5">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
@@ -103,7 +115,7 @@ export default function ProfilePage() {
                             Role
                         </span>
                         <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-muted text-muted-foreground">
-                            {profile.role}
+                            {profile.role ?? "User"}
                         </span>
                     </div>
                     <div className="flex justify-between items-center py-3 border-b border-border">
@@ -111,14 +123,15 @@ export default function ProfilePage() {
                             Member since
                         </span>
                         <span className="text-sm font-medium text-foreground">
-                            {new Date(profile.createdAt).toLocaleDateString(
-                                "en-US",
-                                {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                },
-                            )}
+                            {profile.created_at
+                                ? new Date(
+                                      profile.created_at,
+                                  ).toLocaleDateString("en-US", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                  })
+                                : "—"}
                         </span>
                     </div>
                     <div className="flex justify-between items-center py-3">
@@ -131,6 +144,7 @@ export default function ProfilePage() {
                     </div>
                 </div>
             </div>
+
             {/* Sign out */}
             <button
                 onClick={async () => {
