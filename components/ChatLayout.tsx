@@ -32,7 +32,13 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
     // Fetch current user
     useEffect(() => {
         if (!friendId) return;
-        
+
+        let pusherChannel: ReturnType<
+            typeof getPusherClient
+        >["subscribe"] extends (...args: any[]) => infer R
+            ? R
+            : never;
+
         fetch("/api/auth/me")
             .then((r) => r.json())
             .then((data) => {
@@ -41,27 +47,33 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
 
                 const ch = [data.user.id, friendId].sort().join("-");
                 setChannel(ch);
-                console.log("Subscribing to channel:", ch);
 
                 const pusherClient = getPusherClient();
-                const pusherChannel = pusherClient.subscribe(ch);
+
+                // Unsubscribe first to avoid duplicate subscriptions
+                pusherClient.unsubscribe(ch);
+                pusherChannel = pusherClient.subscribe(ch);
 
                 pusherClient.connection.bind("connected", () =>
-                    console.log("Pusher connected"),
                     setConnected(true),
                 );
                 pusherClient.connection.bind("disconnected", () =>
-                    console.log("Pusher disconnected"),
                     setConnected(false),
                 );
                 if (pusherClient.connection.state === "connected")
                     setConnected(true);
 
                 pusherChannel.bind("message", (data: Message) => {
-                    console.log("Received message:", data);
+                    console.log("Message received:", data);
                     setMessages((prev) => [...prev, data]);
                 });
             });
+
+        return () => {
+            const pusherClient = getPusherClient();
+            const ch = [friendId].join("-");
+            pusherClient.unsubscribe(ch);
+        };
     }, [friendId]);
 
     useEffect(() => {
