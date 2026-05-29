@@ -17,8 +17,8 @@ interface User {
 }
 
 interface ChatLayoutProps {
-    friendId: string;
-    friendName: string;
+    friendId?: string;
+    friendName?: string;
 }
 
 export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
