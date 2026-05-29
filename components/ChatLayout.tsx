@@ -102,10 +102,10 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-gray-100 bg-white flex items-center gap-3">
                     <div className="h-9 w-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold">
-                        {getInitials(friendName)}
+                        {getInitials(friendName ?? "")}
                     </div>
                     <div>
-                        <p className="text-sm font-semibold">{friendName}</p>
+                        <p className="text-sm font-semibold">{friendName ?? ""}</p>
                         <p
                             className={`text-xs ${connected ? "text-green-500" : "text-yellow-500"}`}
                         >
@@ -166,7 +166,7 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
                             className="flex-1 rounded-lg border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                             placeholder={
                                 user
-                                    ? `Message ${friendName}...`
+                                    ? `Message ${friendName ?? ""}...`
                                     : "Sign in to chat"
                             }
                             disabled={!user}
