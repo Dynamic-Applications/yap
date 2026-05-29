@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { name, memberIds } = await req.json();
+        const { name, memberIds, avatarUrl } = await req.json();
         if (!name || !memberIds?.length)
             return NextResponse.json(
                 { error: "Name and members required" },
