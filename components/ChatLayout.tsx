@@ -33,7 +33,6 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
     useEffect(() => {
         if (!friendId) return;
 
-        // Reset state immediately when friend changes
         setMessages([]);
         setConnected(false);
 
@@ -49,7 +48,6 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
                 currentChannel = ch;
                 setChannel(ch);
 
-                // Load message history
                 fetch(`/api/messages?channel=${ch}`)
                     .then((r) => r.json())
                     .then((res) => {
@@ -67,6 +65,8 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
 
                 const pusherClient = getPusherClient();
 
+                // Unsubscribe first to clear any existing listeners on this channel
+                pusherClient.unsubscribe(ch);
                 const pusherChannel = pusherClient.subscribe(ch);
 
                 const onConnected = () => setConnected(true);
@@ -78,12 +78,13 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
                 if (pusherClient.connection.state === "connected")
                     setConnected(true);
 
+                // unbind ALL previous message handlers before binding a new one
+                pusherChannel.unbind("message");
                 pusherChannel.bind("message", (data: Message) => {
                     setMessages((prev) => [...prev, data]);
                 });
             });
 
-        // Cleanup when friendId changes or component unmounts
         return () => {
             const pusherClient = getPusherClient();
             if (currentChannel) {
@@ -93,6 +94,7 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
             pusherClient.connection.unbind("disconnected");
         };
     }, [friendId]);
+    
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
