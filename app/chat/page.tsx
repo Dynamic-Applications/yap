@@ -132,7 +132,7 @@ function ChatPage() {
                             </div>
                             <ChatLayout
                                 key={activeFriendId}
-                                friendId={activeFriendId}
+                                friendId={activeFriendId ?? undefined}
                                 friendName={activeFriend.name}
                             />
                         </>
