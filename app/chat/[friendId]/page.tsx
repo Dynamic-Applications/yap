@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ChatLayout from "@/components/ChatLayout";
+import MobileNav from "@/components/MobileNav";
 
 interface Friend {
     id: string;
@@ -33,6 +34,9 @@ export default function FriendChatPage() {
     if (!friend) return null;
 
     return (
+        <>
         <ChatLayout friendId={friendId as string} friendName={friend.name} />
+        <MobileNav />
+        </>
     );
 }

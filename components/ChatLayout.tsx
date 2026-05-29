@@ -34,35 +34,62 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
         fetch("/api/auth/me")
             .then((r) => r.json())
             .then((data) => {
-                if (data.success) {
-                    setUser(data.user);
-                    const ch = [data.user.id, friendId].sort().join("-");
-                    setChannel(ch);
-                }
+                if (!data.success) return;
+                setUser(data.user);
+
+                const ch = [data.user.id, friendId].sort().join("-");
+                setChannel(ch);
+
+                const pusherClient = getPusherClient();
+                const pusherChannel = pusherClient.subscribe(ch);
+
+                pusherClient.connection.bind("connected", () =>
+                    setConnected(true),
+                );
+                pusherClient.connection.bind("disconnected", () =>
+                    setConnected(false),
+                );
+                if (pusherClient.connection.state === "connected")
+                    setConnected(true);
+
+                pusherChannel.bind("message", (data: Message) => {
+                    setMessages((prev) => [...prev, data]);
+                });
             });
     }, [friendId]);
+    // useEffect(() => {
+    //     fetch("/api/auth/me")
+    //         .then((r) => r.json())
+    //         .then((data) => {
+    //             if (data.success) {
+    //                 setUser(data.user);
+    //                 const ch = [data.user.id, friendId].sort().join("-");
+    //                 setChannel(ch);
+    //             }
+    //         });
+    // }, [friendId]);
 
-    // Subscribe to Pusher channel
-    useEffect(() => {
-        if (!channel) return;
+    // // Subscribe to Pusher channel
+    // useEffect(() => {
+    //     if (!channel) return;
 
-        const pusherClient = getPusherClient();
-        const ch = pusherClient.subscribe(channel);
+    //     const pusherClient = getPusherClient();
+    //     const ch = pusherClient.subscribe(channel);
 
-        pusherClient.connection.bind("connected", () => setConnected(true));
-        pusherClient.connection.bind("disconnected", () => setConnected(false));
+    //     pusherClient.connection.bind("connected", () => setConnected(true));
+    //     pusherClient.connection.bind("disconnected", () => setConnected(false));
 
-        if (pusherClient.connection.state === "connected") setConnected(true);
+    //     if (pusherClient.connection.state === "connected") setConnected(true);
 
-        ch.bind("message", (data: Message) => {
-            setMessages((prev) => [...prev, data]);
-        });
+    //     ch.bind("message", (data: Message) => {
+    //         setMessages((prev) => [...prev, data]);
+    //     });
 
-        return () => {
-            ch.unbind_all();
-            pusherClient.unsubscribe(channel);
-        };
-    }, [channel]);
+    //     return () => {
+    //         ch.unbind_all();
+    //         pusherClient.unsubscribe(channel);
+    //     };
+    // }, [channel]);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
