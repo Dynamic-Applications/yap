@@ -25,7 +25,7 @@ export default function FriendRequests({ userId }: { userId: string }) {
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
     const router = useRouter();
-    const [messageType, setMessageType] = useState<"success" | null>(null);
+    const [messageType, setMessageType] = useState<"success" | "error" | null>(null);
 
     useEffect(() => {
         fetch("/api/friends")
