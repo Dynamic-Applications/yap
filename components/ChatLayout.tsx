@@ -31,6 +31,8 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
 
     // Fetch current user
     useEffect(() => {
+        if (!friendId) return;
+        
         fetch("/api/auth/me")
             .then((r) => r.json())
             .then((data) => {
