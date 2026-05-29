@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getPusherClient } from "@/lib/pusher-client";
+import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
+import { Smile } from "lucide-react";
 
 interface Message {
     message: string;
@@ -22,15 +24,20 @@ interface ChatLayoutProps {
     friendName?: string;
 }
 
-export default function ChatLayout({ friendId, groupId, friendName }: ChatLayoutProps) {
+export default function ChatLayout({
+    friendId,
+    groupId,
+    friendName,
+}: ChatLayoutProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState("");
     const [connected, setConnected] = useState(false);
     const [user, setUser] = useState<User | null>(null);
     const [channel, setChannel] = useState<string>("");
+    const [showEmoji, setShowEmoji] = useState(false);
     const bottomRef = useRef<HTMLDivElement>(null);
+    const emojiRef = useRef<HTMLDivElement>(null);
 
-    // Fetch current user
     useEffect(() => {
         if (!friendId && !groupId) return;
 
@@ -44,7 +51,6 @@ export default function ChatLayout({ friendId, groupId, friendName }: ChatLayout
                 if (!data.success) return;
                 setUser(data.user);
 
-                // Group chat uses group-{id}, DM uses sorted user ids
                 const ch = groupId
                     ? `group-${groupId}`
                     : [data.user.id, friendId].sort().join("-");
@@ -92,18 +98,34 @@ export default function ChatLayout({ friendId, groupId, friendName }: ChatLayout
             pusherClient.connection.unbind("disconnected");
         };
     }, [friendId, groupId]);
-    
+
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
+    // Close emoji picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (
+                emojiRef.current &&
+                !emojiRef.current.contains(e.target as Node)
+            ) {
+                setShowEmoji(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const onEmojiClick = (emojiData: EmojiClickData) => {
+        setNewMessage((prev) => prev + emojiData.emoji);
+    };
+
     const sendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!newMessage.trim() || !user || !channel){
-            console.log("sendMessage blocked:", {newMessage, user, channel})
-            return;
-        }
-        console.log("Sending to channel:", channel);
+        if (!newMessage.trim() || !user || !channel) return;
+
         await fetch("/api/messages", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -116,6 +138,7 @@ export default function ChatLayout({ friendId, groupId, friendName }: ChatLayout
         });
 
         setNewMessage("");
+        setShowEmoji(false);
     };
 
     function getInitials(name: string) {
@@ -129,15 +152,19 @@ export default function ChatLayout({ friendId, groupId, friendName }: ChatLayout
     }
 
     return (
-        <main className="flex flex-col h-[calc(100vh-64px)]">
+        <main className="flex flex-col h-[calc(100vh-64px)] pb-16">
             <div className="w-full flex flex-col flex-1 overflow-hidden">
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-gray-100 bg-white flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold">
+                    <div
+                        className={`h-9 w-9 rounded-full ${groupId ? "bg-purple-500" : "bg-blue-500"} flex items-center justify-center text-white text-sm font-semibold`}
+                    >
                         {getInitials(friendName ?? "")}
                     </div>
                     <div>
-                        <p className="text-sm font-semibold">{friendName ?? ""}</p>
+                        <p className="text-sm font-semibold">
+                            {friendName ?? ""}
+                        </p>
                         <p
                             className={`text-xs ${connected ? "text-green-500" : "text-yellow-500"}`}
                         >
@@ -180,35 +207,59 @@ export default function ChatLayout({ friendId, groupId, friendName }: ChatLayout
                     <div ref={bottomRef} />
                 </div>
 
+                {/* Emoji picker */}
+                {showEmoji && (
+                    <div
+                        ref={emojiRef}
+                        className="absolute bottom-24 left-4 z-50"
+                    >
+                        <EmojiPicker
+                            onEmojiClick={onEmojiClick}
+                            theme={Theme.LIGHT}
+                            height={380}
+                            width={320}
+                        />
+                    </div>
+                )}
+
                 {/* Input */}
                 <form
                     onSubmit={sendMessage}
                     className="p-4 border-t border-gray-100"
                 >
-                    <div className="flex gap-3 items-center">
+                    <div className="flex gap-2 items-center">
                         {user && (
                             <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                                 {getInitials(user.name)}
                             </div>
                         )}
-                        <input
-                            type="text"
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            className="flex-1 rounded-lg border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                            placeholder={
-                                user
-                                    ? `Message ${friendName ?? ""}...`
-                                    : "Sign in to chat"
-                            }
-                            disabled={!user}
-                        />
+                        <div className="flex-1 flex items-center gap-2 rounded-lg border border-gray-200 px-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all">
+                            <input
+                                type="text"
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                className="flex-1 py-3 focus:outline-none text-sm bg-transparent"
+                                placeholder={
+                                    user
+                                        ? `Message ${friendName ?? ""}...`
+                                        : "Sign in to chat"
+                                }
+                                disabled={!user}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowEmoji((prev) => !prev)}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                <Smile size={20} />
+                            </button>
+                        </div>
                         <button
                             type="submit"
                             disabled={!connected || !user}
-                            className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                            className={`px-5 py-3 rounded-lg font-medium transition-all ${
                                 connected && user
-                                    ? "bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 shadow-sm hover:shadow"
+                                    ? "bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 shadow-sm"
                                     : "bg-gray-200 text-gray-400 cursor-not-allowed"
                             }`}
                         >

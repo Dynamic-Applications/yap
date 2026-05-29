@@ -14,7 +14,7 @@ export default function MobileNav() {
     const router = useRouter();
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 flex items-center justify-around bg-white border-t border-gray-100 pb-safe pt-2 z-50">
+        <nav className="fixed bottom-0 left-0 right-0 flex items-center justify-around bg-white border-t border-gray-100 pb-6 pt-2 z-50">
             {tabs.map(({ label, icon: Icon, href }) => {
                 const active = pathname.startsWith(href);
                 return (

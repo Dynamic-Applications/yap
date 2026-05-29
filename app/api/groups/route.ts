@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
 
         // Create group
         const [group] = await sql`
-            INSERT INTO groups (name, created_by)
-            VALUES (${name}, ${userId})
+            INSERT INTO groups (name, created_by, avatar_url)
+            VALUES (${name}, ${userId}, ${avatarUrl ?? null})
             RETURNING id
         `;
 
