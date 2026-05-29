@@ -1,42 +1,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import ChatLayout from "@/components/ChatLayout";
 import MobileNav from "@/components/MobileNav";
 
-interface Friend {
-    id: string;
-    name: string;
-    email: string;
-}
-
-export default function FriendChatPage() {
-    const { friendId } = useParams();
-    const router = useRouter();
-    const [friend, setFriend] = useState<Friend | null>(null);
+export default function ChatFriendPage() {
+    const { friendId } = useParams<{ friendId: string }>();
+    const [friendName, setFriendName] = useState("");
 
     useEffect(() => {
-        fetch("/api/auth/me")
+        fetch("/api/friends")
             .then((r) => r.json())
             .then((data) => {
-                if (!data.success) router.push("/auth/signin");
+                if (data?.success) {
+                    const friend = data.friends.find(
+                        (f: { id: string }) => f.id === friendId,
+                    );
+                    if (friend) setFriendName(friend.name);
+                }
             });
-
-        fetch(`/api/friends/${friendId}`)
-            .then((r) => r.json())
-            .then((data) => {
-                if (data.success) setFriend(data.friend);
-                else router.push("/friends");
-            });
-    }, [friendId, router]);
-
-    if (!friend) return null;
+    }, [friendId]);
 
     return (
         <>
-        <ChatLayout friendId={friendId as string} friendName={friend.name} />
-        <MobileNav />
+            <ChatLayout
+                key={friendId}
+                friendId={friendId}
+                friendName={friendName}
+            />
+            <MobileNav />
         </>
     );
 }

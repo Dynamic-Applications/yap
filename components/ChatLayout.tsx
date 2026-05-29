@@ -33,11 +33,11 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
     useEffect(() => {
         if (!friendId) return;
 
-        let pusherChannel: ReturnType<
-            typeof getPusherClient
-        >["subscribe"] extends (...args: any[]) => infer R
-            ? R
-            : never;
+        // Reset state immediately when friend changes
+        setMessages([]);
+        setConnected(false);
+
+        let currentChannel = "";
 
         fetch("/api/auth/me")
             .then((r) => r.json())
@@ -46,36 +46,53 @@ export default function ChatLayout({ friendId, friendName }: ChatLayoutProps) {
                 setUser(data.user);
 
                 const ch = [data.user.id, friendId].sort().join("-");
+                currentChannel = ch;
                 setChannel(ch);
+
+                // Load message history
+                fetch(`/api/messages?channel=${ch}`)
+                    .then((r) => r.json())
+                    .then((res) => {
+                        if (res.success) {
+                            setMessages(
+                                res.messages.map((m: any) => ({
+                                    message: m.message,
+                                    userId: m.sender_id,
+                                    name: m.name,
+                                    timestamp: m.created_at,
+                                })),
+                            );
+                        }
+                    });
 
                 const pusherClient = getPusherClient();
 
-                // Unsubscribe first to avoid duplicate subscriptions
-                pusherClient.unsubscribe(ch);
-                pusherChannel = pusherClient.subscribe(ch);
+                const pusherChannel = pusherClient.subscribe(ch);
 
-                pusherClient.connection.bind("connected", () =>
-                    setConnected(true),
-                );
-                pusherClient.connection.bind("disconnected", () =>
-                    setConnected(false),
-                );
+                const onConnected = () => setConnected(true);
+                const onDisconnected = () => setConnected(false);
+
+                pusherClient.connection.bind("connected", onConnected);
+                pusherClient.connection.bind("disconnected", onDisconnected);
+
                 if (pusherClient.connection.state === "connected")
                     setConnected(true);
 
                 pusherChannel.bind("message", (data: Message) => {
-                    console.log("Message received:", data);
                     setMessages((prev) => [...prev, data]);
                 });
             });
 
+        // Cleanup when friendId changes or component unmounts
         return () => {
             const pusherClient = getPusherClient();
-            const ch = [friendId].join("-");
-            pusherClient.unsubscribe(ch);
+            if (currentChannel) {
+                pusherClient.unsubscribe(currentChannel);
+            }
+            pusherClient.connection.unbind("connected");
+            pusherClient.connection.unbind("disconnected");
         };
     }, [friendId]);
-
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
