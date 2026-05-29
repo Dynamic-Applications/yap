@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import MobileNav from "@/components/MobileNav";
 
 interface ProfileUser {
     id: string;
@@ -140,6 +141,7 @@ export default function ProfilePage() {
             >
                 Sign out
             </button>
+            <MobileNav />
         </div>
     );
 }

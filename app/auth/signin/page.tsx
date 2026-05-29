@@ -1,16 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react"
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function AuthPage() {
+function AuthPage() {
     const router = useRouter();
-    const [tab, setTab] = useState<"signin" | "signup">("signin");
-    const [email, setEmail] = useState("");
+    const searchParams = useSearchParams();
+    const [tab, setTab] = useState<"signin" | "signup">(
+        searchParams.get("email") ? "signup" : "signin"
+    );
+    const [email, setEmail] = useState(searchParams.get("email") ?? "");
     const [password, setPassword] = useState("");
     const [name, setName] = useState("");
     const [error, setError] = useState("");
@@ -215,4 +219,12 @@ export default function AuthPage() {
             </div>
         </main>
     );
+}
+
+export default function Page() {
+    return (
+        <Suspense>
+            <AuthPage />
+        </Suspense>
+    )
 }

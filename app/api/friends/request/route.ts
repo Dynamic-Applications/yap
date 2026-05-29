@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
 import { pusher } from "@/lib/pusher";
+import { sendInviteEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
     try {
@@ -21,15 +22,19 @@ export async function POST(req: NextRequest) {
                 { status: 400 },
             );
 
-        // Find receiver by email
-        const receiverResult =
+        // Get sender info
+        const [sender] =
+            await sql`SELECT name, email FROM users WHERE id = ${senderId}`;
+
+        // Check if target email belongs to an existing user
+        const [receiver] =
             await sql`SELECT id, name FROM users WHERE email = ${email}`;
-        const receiver = receiverResult[0];
-        if (!receiver)
-            return NextResponse.json(
-                { error: "User not found" },
-                { status: 404 },
-            );
+
+        // No account — send invite email instead
+        if (!receiver) {
+            await sendInviteEmail({ toEmail: email, senderName: sender.name });
+            return NextResponse.json({ success: true, invited: true });
+        }
 
         if (receiver.id === senderId)
             return NextResponse.json(
@@ -38,47 +43,40 @@ export async function POST(req: NextRequest) {
             );
 
         // Check if already friends
-        const alreadyFriends = await sql`
+        const [alreadyFriends] = await sql`
             SELECT id FROM friends WHERE user_id = ${senderId} AND friend_id = ${receiver.id}
         `;
-        if (alreadyFriends.length > 0)
+        if (alreadyFriends)
             return NextResponse.json(
                 { error: "Already friends" },
                 { status: 409 },
             );
 
         // Check if request already exists
-        const existing = await sql`
-            SELECT id, status FROM friend_requests
-            WHERE sender_id = ${senderId} AND receiver_id = ${receiver.id}
+        const [existing] = await sql`
+            SELECT id FROM friend_requests WHERE sender_id = ${senderId} AND receiver_id = ${receiver.id}
         `;
-        if (existing.length > 0)
+        if (existing)
             return NextResponse.json(
                 { error: "Request already sent" },
                 { status: 409 },
             );
 
-        // Get sender info
-        const senderResult =
-            await sql`SELECT name, email FROM users WHERE id = ${senderId}`;
-        const sender = senderResult[0];
-
         // Create request
-        const request = await sql`
+        const [request] = await sql`
             INSERT INTO friend_requests (sender_id, receiver_id)
             VALUES (${senderId}, ${receiver.id})
             RETURNING id
         `;
 
-        // Push notification to receiver via Pusher
         await pusher.trigger(`user-${receiver.id}`, "friend-request", {
-            requestId: request[0].id,
+            requestId: request.id,
             senderId,
             senderName: sender.name,
             senderEmail: sender.email,
         });
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, invited: false });
     } catch (err) {
         console.error(err);
         return NextResponse.json(

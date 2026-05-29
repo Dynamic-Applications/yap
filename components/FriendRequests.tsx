@@ -25,6 +25,7 @@ export default function FriendRequests({ userId }: { userId: string }) {
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const [messageType, setMessageType] = useState<"success" | null>(null);
 
     useEffect(() => {
         fetch("/api/friends")
@@ -86,8 +87,19 @@ export default function FriendRequests({ userId }: { userId: string }) {
         });
         const data = await res.json();
 
-        setMessage(res.ok ? "Friend request sent!" : data.error);
-        if (res.ok) setEmail("");
+        if (res.ok) {
+            setMessageType("success");
+            setMessage(
+                data.invited
+                    ? `No account found — we sent ${email} an invite!`
+                    : "Friend request sent!",
+            );
+            setEmail("");
+        } else {
+            setMessageType("error");
+            setMessage(data.error);
+        }
+
         setLoading(false);
     };
 
@@ -133,7 +145,7 @@ export default function FriendRequests({ userId }: { userId: string }) {
                 </form>
                 {message && (
                     <p
-                        className={`text-sm mt-2 ${message === "Friend request sent!" ? "text-green-600" : "text-red-500"}`}
+                        className={`text-sm mt-2 ${messageType === "success" ? "text-green-600" : "text-red-500"}`}
                     >
                         {message}
                     </p>
@@ -198,7 +210,9 @@ export default function FriendRequests({ userId }: { userId: string }) {
                         {friends.map((friend) => (
                             <div
                                 key={friend.id}
-                                onClick={() => router.push(`/chat/${friend.id}`)}
+                                onClick={() =>
+                                    router.push(`/chat?friendId=${friend.id}`)
+                                }
                                 className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-white"
                             >
                                 <div className="h-9 w-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold">

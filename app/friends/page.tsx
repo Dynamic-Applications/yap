@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import FriendRequests from "@/components/FriendRequests";
 import { ArrowLeft } from "lucide-react";
+import MobileNav from "@/components/MobileNav";
 
 export default function FriendsPage() {
     const router = useRouter();
@@ -30,5 +31,6 @@ export default function FriendsPage() {
                 Back
             </button>
             <FriendRequests userId={userId} />
+            <MobileNav />
             </div>);
 }
