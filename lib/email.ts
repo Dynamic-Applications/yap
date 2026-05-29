@@ -11,14 +11,14 @@ export async function sendInviteEmail({
     senderName: string;
 }) {
     await resend.emails.send({
-        from: "YourApp <no-reply@yourapp.com>",
+        from: "Yap <no-reply@yap-jet.vercel.app>",
         to: toEmail,
-        subject: `${senderName} invited you to YourApp`,
+        subject: `${senderName} invited you to Yap`,
         html: `
             <p>Hi there,</p>
-            <p><strong>${senderName}</strong> wants to connect with you on YourApp.</p>
+            <p><strong>${senderName}</strong> wants to connect with you on Yap.</p>
             <p>
-                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/signup?email=${encodeURIComponent(toEmail)}"
+                <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/signup?email=${encodeURIComponent(toEmail)}"
                    style="background:#3b82f6;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block;">
                     Accept Invite
                 </a>
