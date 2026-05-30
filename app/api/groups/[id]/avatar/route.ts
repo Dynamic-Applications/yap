@@ -83,7 +83,7 @@ export async function POST(
 // DELETE /api/groups/[id]/avatar — remove the group avatar entirely
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string } },
+    { params }: { params: Promise<{ id: string }> },
 ) {
     try {
         const token = req.cookies.get("token")?.value;
@@ -103,7 +103,7 @@ export async function DELETE(
             );
         }
 
-        const groupId = params.id;
+        const { id: groupId } = await params;
 
         const [group] = await sql`
             SELECT id, avatar_url FROM groups
