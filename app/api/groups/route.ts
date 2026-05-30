@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
 // Only the group creator may update group details.
 export async function PATCH(
     req: NextRequest,
-    { params }: { params: { id: string } },
+    { params }: { params: Promise<{ id: string }> },
 ) {
     try {
         const token = req.cookies.get("token")?.value;
@@ -116,7 +116,7 @@ export async function PATCH(
             );
         }
 
-        const groupId = params.id;
+        const { id: groupId } = await params;
         const { name, avatarUrl } = await req.json();
 
         if (!name && !avatarUrl)
@@ -159,7 +159,7 @@ export async function PATCH(
 // Only the group creator may remove members; a creator cannot remove themselves.
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string; memberId: string } },
+    { params }: { params: Promise<{ id: string; memberId: string }> },
 ) {
     try {
         const token = req.cookies.get("token")?.value;
@@ -179,7 +179,7 @@ export async function DELETE(
             );
         }
 
-        const { id: groupId, memberId } = params;
+        const { id: groupId, id: memberId } = await params;
 
         // Only the group creator can remove members
         const [group] = await sql`
