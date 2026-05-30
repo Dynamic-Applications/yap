@@ -6,7 +6,9 @@ import { Suspense } from "react";
 import ChatLayout from "@/components/ChatLayout";
 import MobileNav from "@/components/MobileNav";
 import CreateGroupModal from "@/components/CreateGroupModal";
+import GroupSettingsModal from "@/components/GroupSettingsModal";
 import { Users } from "lucide-react";
+import Image from "next/image";
 
 interface Friend {
     id: string;
@@ -14,10 +16,25 @@ interface Friend {
     email: string;
 }
 
+interface Member {
+    id: string;
+    name: string;
+    email: string;
+    isCreator: boolean;
+}
+
 interface Group {
     id: string;
     name: string;
     avatar_url?: string;
+    created_by?: string;
+    members?: Member[];
+}
+
+interface CurrentUser {
+    id: string;
+    name: string;
+    email: string;
 }
 
 function getInitials(name: string) {
@@ -35,8 +52,10 @@ function ChatPage() {
     const searchParams = useSearchParams();
     const [friends, setFriends] = useState<Friend[]>([]);
     const [groups, setGroups] = useState<Group[]>([]);
+    const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [showCreateGroup, setShowCreateGroup] = useState(false);
+    const [showGroupSettings, setShowGroupSettings] = useState(false);
 
     const activeFriendId = searchParams.get("friendId");
     const activeGroupId = searchParams.get("groupId");
@@ -52,6 +71,7 @@ function ChatPage() {
                     router.push("/auth/signin");
                     return;
                 }
+                setCurrentUser(data.user);
                 return Promise.all([
                     fetch("/api/friends").then((r) => r.json()),
                     fetch("/api/groups").then((r) => r.json()),
@@ -66,10 +86,27 @@ function ChatPage() {
             .finally(() => setLoading(false));
     }, [router]);
 
+    // Fetch full group details (members list) when settings modal is opened
+    const openGroupSettings = async () => {
+        if (!activeGroup) return;
+        if (!activeGroup.members) {
+            const res = await fetch(`/api/groups/${activeGroup.id}`);
+            const data = await res.json();
+            if (data.success) {
+                setGroups((prev) =>
+                    prev.map((g) =>
+                        g.id === activeGroup.id ? { ...g, ...data.group } : g,
+                    ),
+                );
+            }
+        }
+        setShowGroupSettings(true);
+    };
+
     const activeId = activeFriendId ?? activeGroupId;
     const activeName = activeFriend?.name ?? activeGroup?.name ?? "";
     const activeChannel = activeFriendId
-        ? null // ChatLayout computes DM channel internally
+        ? null
         : activeGroupId
           ? `group-${activeGroupId}`
           : null;
@@ -87,13 +124,53 @@ function ChatPage() {
                 <CreateGroupModal
                     friends={friends}
                     onClose={() => setShowCreateGroup(false)}
-                    onCreated={(groupId, groupName) => {
+                    onCreated={(groupId, groupName, avatarUrl) => {
                         setGroups((prev) => [
-                            { id: groupId, name: groupName },
+                            {
+                                id: groupId,
+                                name: groupName,
+                                avatar_url: avatarUrl,
+                            },
                             ...prev,
                         ]);
                         setShowCreateGroup(false);
                         router.push(`/chat?groupId=${groupId}`);
+                    }}
+                />
+            )}
+
+            {showGroupSettings && activeGroup && currentUser && (
+                <GroupSettingsModal
+                    groupId={activeGroup.id}
+                    groupName={activeGroup.name}
+                    groupAvatarUrl={activeGroup.avatar_url}
+                    members={activeGroup.members ?? []}
+                    currentUserId={currentUser.id}
+                    isCreator={activeGroup.created_by === currentUser.id}
+                    onClose={() => setShowGroupSettings(false)}
+                    onLeft={() => {
+                        setShowGroupSettings(false);
+                        setGroups((prev) =>
+                            prev.filter((g) => g.id !== activeGroup.id),
+                        );
+                        router.push("/chat");
+                    }}
+                    onUpdated={(changes) => {
+                        setGroups((prev) =>
+                            prev.map((g) =>
+                                g.id === activeGroup.id
+                                    ? {
+                                          ...g,
+                                          ...(changes.name && {
+                                              name: changes.name,
+                                          }),
+                                          ...(changes.avatarUrl && {
+                                              avatar_url: changes.avatarUrl,
+                                          }),
+                                      }
+                                    : g,
+                            ),
+                        );
                     }}
                 />
             )}
@@ -128,8 +205,18 @@ function ChatPage() {
                                         : "hover:bg-gray-50"
                                 }`}
                             >
-                                <div className="h-12 w-12 rounded-full bg-purple-500 flex items-center justify-center text-white font-semibold flex-shrink-0">
-                                    {getInitials(group.name)}
+                                <div className="h-12 w-12 rounded-full bg-purple-500 flex items-center justify-center text-white font-semibold flex-shrink-0 overflow-hidden">
+                                    {group.avatar_url ? (
+                                        <Image
+                                            src={group.avatar_url}
+                                            alt={group.name}
+                                            width={48}
+                                            height={48}
+                                            className="object-cover w-full h-full"
+                                        />
+                                    ) : (
+                                        getInitials(group.name)
+                                    )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-semibold">
@@ -191,6 +278,7 @@ function ChatPage() {
                 >
                     {activeId ? (
                         <>
+                            {/* Mobile back + group settings trigger */}
                             <div className="md:hidden flex items-center gap-2 px-4 py-3 border-b border-gray-100">
                                 <button
                                     onClick={() => router.push("/chat")}
@@ -198,7 +286,44 @@ function ChatPage() {
                                 >
                                     ← Back
                                 </button>
+                                {activeGroup && (
+                                    <button
+                                        onClick={openGroupSettings}
+                                        className="ml-auto text-sm text-gray-500 font-medium hover:text-gray-700"
+                                    >
+                                        {activeGroup.name}
+                                    </button>
+                                )}
                             </div>
+
+                            {/* Desktop group settings trigger — sits above ChatLayout */}
+                            {activeGroup && (
+                                <button
+                                    onClick={openGroupSettings}
+                                    className="hidden md:flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors text-left"
+                                >
+                                    <div className="h-8 w-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 overflow-hidden">
+                                        {activeGroup.avatar_url ? (
+                                            <Image
+                                                src={activeGroup.avatar_url}
+                                                alt={activeGroup.name}
+                                                width={32}
+                                                height={32}
+                                                className="object-cover w-full h-full"
+                                            />
+                                        ) : (
+                                            getInitials(activeGroup.name)
+                                        )}
+                                    </div>
+                                    <span className="text-sm font-semibold">
+                                        {activeGroup.name}
+                                    </span>
+                                    <span className="text-xs text-gray-400 ml-auto">
+                                        Group info ›
+                                    </span>
+                                </button>
+                            )}
+
                             <ChatLayout
                                 key={activeId}
                                 friendId={activeFriendId ?? undefined}

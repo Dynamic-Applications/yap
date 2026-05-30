@@ -90,3 +90,133 @@ export async function GET(req: NextRequest) {
         );
     }
 }
+
+// PATCH /api/groups/[id] — update group name and/or avatar
+// Body: { name?: string, avatarUrl?: string }
+// Only the group creator may update group details.
+export async function PATCH(
+    req: NextRequest,
+    { params }: { params: { id: string } },
+) {
+    try {
+        const token = req.cookies.get("token")?.value;
+        if (!token)
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 },
+            );
+
+        let userId: string;
+        try {
+            ({ userId } = verifyToken(token));
+        } catch {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 },
+            );
+        }
+
+        const groupId = params.id;
+        const { name, avatarUrl } = await req.json();
+
+        if (!name && !avatarUrl)
+            return NextResponse.json(
+                { error: "Nothing to update" },
+                { status: 400 },
+            );
+
+        // Verify the requester is the group creator
+        const [group] = await sql`
+            SELECT id FROM groups
+            WHERE id = ${groupId} AND created_by = ${userId}
+        `;
+        if (!group)
+            return NextResponse.json(
+                { error: "Group not found or permission denied" },
+                { status: 403 },
+            );
+
+        const [updated] = await sql`
+            UPDATE groups
+            SET
+                name       = COALESCE(${name ?? null}, name),
+                avatar_url = COALESCE(${avatarUrl ?? null}, avatar_url)
+            WHERE id = ${groupId}
+            RETURNING id, name, avatar_url
+        `;
+
+        return NextResponse.json({ success: true, group: updated });
+    } catch (err) {
+        console.error(err);
+        return NextResponse.json(
+            { error: "Internal server error" },
+            { status: 500 },
+        );
+    }
+}
+
+// DELETE /api/groups/[id]/members/[memberId] — remove a member from a group
+// Only the group creator may remove members; a creator cannot remove themselves.
+export async function DELETE(
+    req: NextRequest,
+    { params }: { params: { id: string; memberId: string } },
+) {
+    try {
+        const token = req.cookies.get("token")?.value;
+        if (!token)
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 },
+            );
+
+        let userId: string;
+        try {
+            ({ userId } = verifyToken(token));
+        } catch {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 },
+            );
+        }
+
+        const { id: groupId, memberId } = params;
+
+        // Only the group creator can remove members
+        const [group] = await sql`
+            SELECT id FROM groups
+            WHERE id = ${groupId} AND created_by = ${userId}
+        `;
+        if (!group)
+            return NextResponse.json(
+                { error: "Group not found or permission denied" },
+                { status: 403 },
+            );
+
+        // Creator cannot remove themselves
+        if (memberId === userId)
+            return NextResponse.json(
+                { error: "Cannot remove the group creator" },
+                { status: 400 },
+            );
+
+        const result = await sql`
+            DELETE FROM group_members
+            WHERE group_id = ${groupId} AND user_id = ${memberId}
+            RETURNING user_id
+        `;
+
+        if (!result.length)
+            return NextResponse.json(
+                { error: "Member not found in group" },
+                { status: 404 },
+            );
+
+        return NextResponse.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        return NextResponse.json(
+            { error: "Internal server error" },
+            { status: 500 },
+        );
+    }
+}

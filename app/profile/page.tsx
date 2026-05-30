@@ -59,10 +59,9 @@ export default function ProfilePage() {
                 onClick={() => router.back()}
                 className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
             >
-                <ArrowLeft size={16} />
+                <ArrowLeft size={18} />
                 Back
             </button>
-
             {/* Avatar + name */}
             <div className="flex items-center gap-5 mb-10">
                 <AvatarUpload
