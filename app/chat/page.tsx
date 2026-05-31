@@ -86,7 +86,6 @@ function ChatPage() {
             .finally(() => setLoading(false));
     }, [router]);
 
-    // Fetch full group details (members list) when settings modal is opened
     const openGroupSettings = async () => {
         if (!activeGroup) return;
         if (!activeGroup.members) {
@@ -103,13 +102,14 @@ function ChatPage() {
         setShowGroupSettings(true);
     };
 
+    const handleGroupGone = () => {
+        setShowGroupSettings(false);
+        setGroups((prev) => prev.filter((g) => g.id !== activeGroup?.id));
+        router.push("/chat");
+    };
+
     const activeId = activeFriendId ?? activeGroupId;
     const activeName = activeFriend?.name ?? activeGroup?.name ?? "";
-    const activeChannel = activeFriendId
-        ? null
-        : activeGroupId
-          ? `group-${activeGroupId}`
-          : null;
 
     if (loading)
         return (
@@ -148,13 +148,8 @@ function ChatPage() {
                     currentUserId={currentUser.id}
                     isCreator={activeGroup.created_by === currentUser.id}
                     onClose={() => setShowGroupSettings(false)}
-                    onLeft={() => {
-                        setShowGroupSettings(false);
-                        setGroups((prev) =>
-                            prev.filter((g) => g.id !== activeGroup.id),
-                        );
-                        router.push("/chat");
-                    }}
+                    onLeft={handleGroupGone}
+                    onDeleted={handleGroupGone}
                     onUpdated={(changes) => {
                         setGroups((prev) =>
                             prev.map((g) =>
@@ -296,7 +291,7 @@ function ChatPage() {
                                 )}
                             </div>
 
-                            {/* Desktop group settings trigger — sits above ChatLayout */}
+                            {/* Desktop group settings trigger */}
                             {activeGroup && (
                                 <button
                                     onClick={openGroupSettings}
