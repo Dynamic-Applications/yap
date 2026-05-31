@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { X, Pencil, UserMinus, LogOut } from "lucide-react";
+import { X, Pencil, UserMinus, LogOut, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 
 interface Member {
@@ -19,10 +19,13 @@ interface Props {
     currentUserId: string;
     isCreator: boolean;
     onClose: () => void;
-    /** Called after the current user successfully leaves the group. */
     onLeft: () => void;
-    /** Called after a member is removed or the group is renamed/avatar updated. */
-    onUpdated: (changes: { name?: string; avatarUrl?: string }) => void;
+    onDeleted: () => void;
+    onUpdated: (changes: {
+        name?: string;
+        avatarUrl?: string;
+        newAdminId?: string;
+    }) => void;
 }
 
 function getInitials(name: string) {
@@ -48,7 +51,8 @@ function memberColor(index: number) {
 
 type ConfirmAction =
     | { type: "remove"; memberId: string; memberName: string }
-    | { type: "leave" };
+    | { type: "leave" }
+    | { type: "makeAdmin"; memberId: string; memberName: string };
 
 export default function GroupSettingsModal({
     groupId,
@@ -59,6 +63,7 @@ export default function GroupSettingsModal({
     isCreator,
     onClose,
     onLeft,
+    onDeleted,
     onUpdated,
 }: Props) {
     // ── name ──────────────────────────────────────────────────────────────
@@ -74,6 +79,7 @@ export default function GroupSettingsModal({
 
     // ── members ───────────────────────────────────────────────────────────
     const [memberList, setMemberList] = useState<Member[]>(members);
+    const [currentIsCreator, setCurrentIsCreator] = useState(isCreator);
 
     // ── confirm dialog ────────────────────────────────────────────────────
     const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
@@ -98,9 +104,7 @@ export default function GroupSettingsModal({
                 body: formData,
             });
             const data = await res.json();
-            if (data.success) {
-                onUpdated({ avatarUrl: data.avatarUrl });
-            }
+            if (data.success) onUpdated({ avatarUrl: data.avatarUrl });
         } finally {
             setUploadingAvatar(false);
         }
@@ -143,13 +147,41 @@ export default function GroupSettingsModal({
         setActionError("");
 
         try {
-            if (confirmAction.type === "remove") {
-                const res = await fetch(
-                    `/api/groups/${groupId}/members/${confirmAction.memberId}`,
-                    { method: "DELETE" },
-                );
+            if (confirmAction.type === "makeAdmin") {
+                const res = await fetch(`/api/groups/${groupId}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        newAdminId: confirmAction.memberId,
+                    }),
+                });
                 const data = await res.json();
                 if (data.success) {
+                    // Update member list: old admin loses badge, new admin gains it
+                    setMemberList((prev) =>
+                        prev.map((m) => ({
+                            ...m,
+                            isCreator: m.id === confirmAction.memberId,
+                        })),
+                    );
+                    setCurrentIsCreator(false);
+                    onUpdated({ newAdminId: confirmAction.memberId });
+                    setConfirmAction(null);
+                } else {
+                    setActionError(data.error ?? "Failed to transfer admin.");
+                }
+            } else if (confirmAction.type === "remove") {
+                const res = await fetch(`/api/groups/${groupId}`, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ memberId: confirmAction.memberId }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (data.groupDeleted) {
+                        onDeleted();
+                        return;
+                    }
                     setMemberList((prev) =>
                         prev.filter((m) => m.id !== confirmAction.memberId),
                     );
@@ -164,7 +196,7 @@ export default function GroupSettingsModal({
                 });
                 const data = await res.json();
                 if (data.success) {
-                    onLeft();
+                    data.groupDeleted ? onDeleted() : onLeft();
                 } else {
                     setActionError(data.error ?? "Failed to leave group.");
                 }
@@ -175,6 +207,29 @@ export default function GroupSettingsModal({
             setActionLoading(false);
         }
     };
+
+    const confirmDialogText = () => {
+        if (!confirmAction) return { title: "", desc: "", btn: "" };
+        if (confirmAction.type === "makeAdmin")
+            return {
+                title: `Make ${confirmAction.memberName} admin?`,
+                desc: "They'll be able to manage the group. You'll become a regular member.",
+                btn: "Transfer",
+            };
+        if (confirmAction.type === "remove")
+            return {
+                title: `Remove ${confirmAction.memberName}?`,
+                desc: `${confirmAction.memberName} will be removed from the group.`,
+                btn: "Remove",
+            };
+        return {
+            title: "Leave group?",
+            desc: "You'll no longer have access to this group's messages.",
+            btn: "Leave",
+        };
+    };
+
+    const { title, desc, btn } = confirmDialogText();
 
     return (
         <>
@@ -198,7 +253,8 @@ export default function GroupSettingsModal({
                             <div
                                 className="h-20 w-20 rounded-full overflow-hidden cursor-pointer"
                                 onClick={() =>
-                                    isCreator && inputRef.current?.click()
+                                    currentIsCreator &&
+                                    inputRef.current?.click()
                                 }
                             >
                                 {avatarPreview ? (
@@ -220,7 +276,7 @@ export default function GroupSettingsModal({
                                     </div>
                                 )}
                             </div>
-                            {isCreator && (
+                            {currentIsCreator && (
                                 <button
                                     onClick={() => inputRef.current?.click()}
                                     aria-label="Edit group avatar"
@@ -243,7 +299,7 @@ export default function GroupSettingsModal({
                     </div>
 
                     {/* Group name */}
-                    {isCreator && isEditingName ? (
+                    {currentIsCreator && isEditingName ? (
                         <div className="space-y-2">
                             <input
                                 type="text"
@@ -279,7 +335,7 @@ export default function GroupSettingsModal({
                             <span className="text-sm font-medium text-gray-800 truncate">
                                 {name}
                             </span>
-                            {isCreator && (
+                            {currentIsCreator && (
                                 <button
                                     onClick={startEditName}
                                     className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors ml-2 flex-shrink-0"
@@ -300,7 +356,11 @@ export default function GroupSettingsModal({
                                 const isCurrentUser =
                                     member.id === currentUserId;
                                 const canRemove =
-                                    isCreator &&
+                                    currentIsCreator &&
+                                    !isCurrentUser &&
+                                    !member.isCreator;
+                                const canMakeAdmin =
+                                    currentIsCreator &&
                                     !isCurrentUser &&
                                     !member.isCreator;
                                 return (
@@ -330,29 +390,55 @@ export default function GroupSettingsModal({
                                             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-500 border border-blue-100 flex-shrink-0">
                                                 Admin
                                             </span>
-                                        ) : canRemove ? (
-                                            <button
-                                                onClick={() =>
-                                                    setConfirmAction({
-                                                        type: "remove",
-                                                        memberId: member.id,
-                                                        memberName: member.name,
-                                                    })
-                                                }
-                                                aria-label={`Remove ${member.name}`}
-                                                className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0"
-                                            >
-                                                <UserMinus size={15} />
-                                            </button>
-                                        ) : null}
+                                        ) : (
+                                            <div className="flex items-center gap-1 flex-shrink-0">
+                                                {canMakeAdmin && (
+                                                    <button
+                                                        onClick={() =>
+                                                            setConfirmAction({
+                                                                type: "makeAdmin",
+                                                                memberId:
+                                                                    member.id,
+                                                                memberName:
+                                                                    member.name,
+                                                            })
+                                                        }
+                                                        aria-label={`Make ${member.name} admin`}
+                                                        className="text-gray-300 hover:text-blue-400 transition-colors"
+                                                        title="Make admin"
+                                                    >
+                                                        <ShieldCheck
+                                                            size={15}
+                                                        />
+                                                    </button>
+                                                )}
+                                                {canRemove && (
+                                                    <button
+                                                        onClick={() =>
+                                                            setConfirmAction({
+                                                                type: "remove",
+                                                                memberId:
+                                                                    member.id,
+                                                                memberName:
+                                                                    member.name,
+                                                            })
+                                                        }
+                                                        aria-label={`Remove ${member.name}`}
+                                                        className="text-gray-300 hover:text-red-400 transition-colors"
+                                                    >
+                                                        <UserMinus size={15} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
                         </div>
                     </div>
 
-                    {/* Leave group — available to non-creator members */}
-                    {!isCreator && (
+                    {/* Leave group */}
+                    {!currentIsCreator && (
                         <button
                             onClick={() => setConfirmAction({ type: "leave" })}
                             className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-red-100 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors"
@@ -361,24 +447,25 @@ export default function GroupSettingsModal({
                             Leave group
                         </button>
                     )}
+
+                    {/* Admin leave hint */}
+                    {currentIsCreator && (
+                        <p className="text-xs text-center text-gray-400">
+                            Transfer admin to a member before leaving the group.
+                        </p>
+                    )}
                 </div>
             </div>
 
-            {/* ── Confirm dialog (remove member OR leave) ───────────────────── */}
+            {/* ── Confirm dialog ────────────────────────────────────────────── */}
             {confirmAction && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] px-4">
                     <div className="bg-white rounded-2xl w-full max-w-xs p-5 space-y-4 shadow-xl">
                         <div>
                             <p className="text-sm font-semibold text-gray-900">
-                                {confirmAction.type === "leave"
-                                    ? "Leave group?"
-                                    : `Remove ${confirmAction.memberName}?`}
+                                {title}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">
-                                {confirmAction.type === "leave"
-                                    ? "You'll no longer have access to this group's messages."
-                                    : `${confirmAction.memberName} will be removed from the group.`}
-                            </p>
+                            <p className="text-xs text-gray-400 mt-1">{desc}</p>
                             {actionError && (
                                 <p className="text-xs text-red-500 mt-2">
                                     {actionError}
@@ -399,13 +486,13 @@ export default function GroupSettingsModal({
                             <button
                                 onClick={handleConfirm}
                                 disabled={actionLoading}
-                                className="flex-1 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                                className={`flex-1 py-2 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+                                    confirmAction.type === "makeAdmin"
+                                        ? "bg-blue-500 hover:bg-blue-600"
+                                        : "bg-red-500 hover:bg-red-600"
+                                }`}
                             >
-                                {actionLoading
-                                    ? "…"
-                                    : confirmAction.type === "leave"
-                                      ? "Leave"
-                                      : "Remove"}
+                                {actionLoading ? "…" : btn}
                             </button>
                         </div>
                     </div>

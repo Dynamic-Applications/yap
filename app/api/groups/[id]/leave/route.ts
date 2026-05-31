@@ -3,8 +3,9 @@ import { sql } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
 
 // DELETE /api/groups/[id]/leave
-// Removes the current user from the group.
-// The group creator cannot leave — they must delete the group or transfer ownership first.
+// Any non-admin member can leave freely.
+// The admin must transfer ownership first (PATCH /api/groups/[id] with newAdminId).
+// Auto-deletes the group if no members remain.
 export async function DELETE(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> },
@@ -29,7 +30,6 @@ export async function DELETE(
 
         const { id: groupId } = await params;
 
-        // Verify the group exists and the user is a member
         const [membership] = await sql`
             SELECT gm.user_id, g.created_by
             FROM group_members gm
@@ -43,12 +43,10 @@ export async function DELETE(
                 { status: 404 },
             );
 
-        // Creator cannot leave — they must delete the group or transfer ownership
+        // Admin must transfer ownership before leaving
         if (membership.created_by === userId)
             return NextResponse.json(
-                {
-                    error: "Group creator cannot leave. Delete the group or transfer ownership first.",
-                },
+                { error: "Transfer admin to another member before leaving." },
                 { status: 400 },
             );
 
@@ -57,7 +55,16 @@ export async function DELETE(
             WHERE group_id = ${groupId} AND user_id = ${userId}
         `;
 
-        return NextResponse.json({ success: true });
+        // Auto-delete the group if no members remain
+        const [{ count }] = await sql`
+            SELECT COUNT(*) as count FROM group_members WHERE group_id = ${groupId}
+        `;
+        if (Number(count) === 0) {
+            await sql`DELETE FROM groups WHERE id = ${groupId}`;
+            return NextResponse.json({ success: true, groupDeleted: true });
+        }
+
+        return NextResponse.json({ success: true, groupDeleted: false });
     } catch (err) {
         console.error(err);
         return NextResponse.json(
