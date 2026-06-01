@@ -1,7 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { X, Pencil, UserMinus, LogOut, ShieldCheck } from "lucide-react";
+import {
+    X,
+    Pencil,
+    UserMinus,
+    LogOut,
+    ShieldCheck,
+    Trash2,
+} from "lucide-react";
 import Image from "next/image";
 
 interface Member {
@@ -15,6 +22,8 @@ interface Props {
     groupId: string;
     groupName: string;
     groupAvatarUrl?: string;
+    groupCreatedByName?: string;
+    groupCreatedAt?: string;
     members: Member[];
     currentUserId: string;
     isCreator: boolean;
@@ -52,12 +61,15 @@ function memberColor(index: number) {
 type ConfirmAction =
     | { type: "remove"; memberId: string; memberName: string }
     | { type: "leave" }
-    | { type: "makeAdmin"; memberId: string; memberName: string };
+    | { type: "makeAdmin"; memberId: string; memberName: string }
+    | { type: "deleteGroup" };
 
 export default function GroupSettingsModal({
     groupId,
     groupName,
     groupAvatarUrl,
+    groupCreatedByName,
+    groupCreatedAt,
     members,
     currentUserId,
     isCreator,
@@ -66,29 +78,24 @@ export default function GroupSettingsModal({
     onDeleted,
     onUpdated,
 }: Props) {
-    // ── name ──────────────────────────────────────────────────────────────
     const [name, setName] = useState(groupName);
     const [isEditingName, setIsEditingName] = useState(false);
     const [draftName, setDraftName] = useState("");
     const [savingName, setSavingName] = useState(false);
 
-    // ── avatar ────────────────────────────────────────────────────────────
     const [avatarPreview, setAvatarPreview] = useState(groupAvatarUrl ?? "");
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // ── members ───────────────────────────────────────────────────────────
     const [memberList, setMemberList] = useState<Member[]>(members);
     const [currentIsCreator, setCurrentIsCreator] = useState(isCreator);
 
-    // ── confirm dialog ────────────────────────────────────────────────────
     const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
         null,
     );
     const [actionLoading, setActionLoading] = useState(false);
     const [actionError, setActionError] = useState("");
 
-    // ── avatar upload ─────────────────────────────────────────────────────
     const handleAvatarChange = async (
         e: React.ChangeEvent<HTMLInputElement>,
     ) => {
@@ -110,7 +117,6 @@ export default function GroupSettingsModal({
         }
     };
 
-    // ── rename ────────────────────────────────────────────────────────────
     const startEditName = () => {
         setDraftName(name);
         setIsEditingName(true);
@@ -140,14 +146,25 @@ export default function GroupSettingsModal({
         }
     };
 
-    // ── confirm dispatcher ────────────────────────────────────────────────
     const handleConfirm = async () => {
         if (!confirmAction) return;
         setActionLoading(true);
         setActionError("");
 
         try {
-            if (confirmAction.type === "makeAdmin") {
+            if (confirmAction.type === "deleteGroup") {
+                const res = await fetch(`/api/groups/${groupId}`, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ deleteGroup: true }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    onDeleted();
+                } else {
+                    setActionError(data.error ?? "Failed to delete group.");
+                }
+            } else if (confirmAction.type === "makeAdmin") {
                 const res = await fetch(`/api/groups/${groupId}`, {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
@@ -157,7 +174,6 @@ export default function GroupSettingsModal({
                 });
                 const data = await res.json();
                 if (data.success) {
-                    // Update member list: old admin loses badge, new admin gains it
                     setMemberList((prev) =>
                         prev.map((m) => ({
                             ...m,
@@ -210,6 +226,12 @@ export default function GroupSettingsModal({
 
     const confirmDialogText = () => {
         if (!confirmAction) return { title: "", desc: "", btn: "" };
+        if (confirmAction.type === "deleteGroup")
+            return {
+                title: "Delete group?",
+                desc: "This will permanently delete the group and all its messages. This cannot be undone.",
+                btn: "Delete",
+            };
         if (confirmAction.type === "makeAdmin")
             return {
                 title: `Make ${confirmAction.memberName} admin?`,
@@ -231,9 +253,16 @@ export default function GroupSettingsModal({
 
     const { title, desc, btn } = confirmDialogText();
 
+    const formattedDate = groupCreatedAt
+        ? new Date(groupCreatedAt).toLocaleDateString(undefined, {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+          })
+        : null;
+
     return (
         <>
-            {/* ── Main modal ───────────────────────────────────────────────── */}
             <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
                 <div className="bg-white rounded-2xl w-full max-w-sm p-6 space-y-5">
                     {/* Header */}
@@ -346,12 +375,31 @@ export default function GroupSettingsModal({
                         </div>
                     )}
 
+                    {/* Created by / created at */}
+                    {(groupCreatedByName || formattedDate) && (
+                        <div className="px-4 py-2.5 rounded-lg border border-gray-100 bg-gray-50 space-y-0.5">
+                            {groupCreatedByName && (
+                                <p className="text-xs text-gray-500">
+                                    Created by{" "}
+                                    <span className="font-medium text-gray-700">
+                                        {groupCreatedByName}
+                                    </span>
+                                </p>
+                            )}
+                            {formattedDate && (
+                                <p className="text-xs text-gray-400">
+                                    {formattedDate}
+                                </p>
+                            )}
+                        </div>
+                    )}
+
                     {/* Members list */}
                     <div className="space-y-1">
                         <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
                             Members · {memberList.length}
                         </p>
-                        <div className="flex flex-col gap-1 max-h-52 overflow-y-auto">
+                        <div className="flex flex-col gap-1 max-h-44 overflow-y-auto">
                             {memberList.map((member, i) => {
                                 const isCurrentUser =
                                     member.id === currentUserId;
@@ -437,7 +485,7 @@ export default function GroupSettingsModal({
                         </div>
                     </div>
 
-                    {/* Leave group */}
+                    {/* Leave group (non-admin) */}
                     {!currentIsCreator && (
                         <button
                             onClick={() => setConfirmAction({ type: "leave" })}
@@ -448,16 +496,28 @@ export default function GroupSettingsModal({
                         </button>
                     )}
 
-                    {/* Admin leave hint */}
+                    {/* Admin actions */}
                     {currentIsCreator && (
-                        <p className="text-xs text-center text-gray-400">
-                            Transfer admin to a member before leaving the group.
-                        </p>
+                        <div className="space-y-2">
+                            <p className="text-xs text-center text-gray-400">
+                                Transfer admin to a member before leaving the
+                                group.
+                            </p>
+                            <button
+                                onClick={() =>
+                                    setConfirmAction({ type: "deleteGroup" })
+                                }
+                                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-red-100 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors"
+                            >
+                                <Trash2 size={15} />
+                                Delete group
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
 
-            {/* ── Confirm dialog ────────────────────────────────────────────── */}
+            {/* Confirm dialog */}
             {confirmAction && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] px-4">
                     <div className="bg-white rounded-2xl w-full max-w-xs p-5 space-y-4 shadow-xl">

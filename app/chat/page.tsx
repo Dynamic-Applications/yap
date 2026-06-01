@@ -28,6 +28,8 @@ interface Group {
     name: string;
     avatar_url?: string;
     created_by?: string;
+    created_by_name?: string;
+    created_at?: string;
     members?: Member[];
 }
 
@@ -144,6 +146,8 @@ function ChatPage() {
                     groupId={activeGroup.id}
                     groupName={activeGroup.name}
                     groupAvatarUrl={activeGroup.avatar_url}
+                    groupCreatedByName={activeGroup.created_by_name}
+                    groupCreatedAt={activeGroup.created_at}
                     members={activeGroup.members ?? []}
                     currentUserId={currentUser.id}
                     isCreator={activeGroup.created_by === currentUser.id}
