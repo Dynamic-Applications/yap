@@ -16,6 +16,7 @@ interface Member {
     name: string;
     email: string;
     isCreator: boolean;
+    avatar_url?: string | null;
 }
 
 interface Props {
@@ -416,10 +417,22 @@ export default function GroupSettingsModal({
                                         key={member.id}
                                         className="flex items-center gap-2 px-2 py-1.5 rounded-lg border border-transparent hover:bg-gray-50"
                                     >
-                                        <div
-                                            className={`h-8 w-8 rounded-full ${memberColor(i)} flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}
-                                        >
-                                            {getInitials(member.name)}
+                                        <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0">
+                                            {member.avatar_url ? (
+                                                <Image
+                                                    src={member.avatar_url}
+                                                    alt={member.name}
+                                                    width={32}
+                                                    height={32}
+                                                    className="object-cover w-full h-full"
+                                                />
+                                            ) : (
+                                                <div
+                                                    className={`h-8 w-8 rounded-full ${memberColor(i)} flex items-center justify-center text-white text-xs font-semibold`}
+                                                >
+                                                    {getInitials(member.name)}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium truncate">

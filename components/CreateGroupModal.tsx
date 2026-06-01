@@ -8,6 +8,7 @@ interface Friend {
     id: string;
     name: string;
     email: string;
+    avatar_url?: string | null;
 }
 
 interface Props {
@@ -245,10 +246,22 @@ export default function CreateGroupModal({
                                         key={f.id}
                                         className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-blue-50 border border-blue-100"
                                     >
-                                        <div
-                                            className={`h-6 w-6 rounded-full ${friendColor(i)} flex items-center justify-center text-white text-[10px] font-semibold flex-shrink-0`}
-                                        >
-                                            {getInitials(f.name)}
+                                        <div className="h-6 w-6 rounded-full overflow-hidden flex-shrink-0">
+                                            {f.avatar_url ? (
+                                                <Image
+                                                    src={f.avatar_url}
+                                                    alt={f.name}
+                                                    width={24}
+                                                    height={24}
+                                                    className="object-cover w-full h-full"
+                                                />
+                                            ) : (
+                                                <div
+                                                    className={`h-6 w-6 rounded-full ${friendColor(i)} flex items-center justify-center text-white text-[10px] font-semibold flex-shrink-0`}
+                                                >
+                                                    {getInitials(f.name)}
+                                                </div>
+                                            )}
                                         </div>
                                         <span className="flex-1 text-sm text-gray-700 truncate">
                                             {f.name}
@@ -278,10 +291,22 @@ export default function CreateGroupModal({
                                         : "hover:bg-gray-50 border border-transparent"
                                 }`}
                             >
-                                <div
-                                    className={`h-8 w-8 rounded-full ${friendColor(i)} flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}
-                                >
-                                    {getInitials(friend.name)}
+                                <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0">
+                                    {friend.avatar_url ? (
+                                        <Image
+                                            src={friend.avatar_url}
+                                            alt={friend.name}
+                                            width={32}
+                                            height={32}
+                                            className="object-cover w-full h-full"
+                                        />
+                                    ) : (
+                                        <div
+                                            className={`h-8 w-8 rounded-full ${friendColor(i)} flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}
+                                        >
+                                            {getInitials(friend.name)}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium truncate">

@@ -28,7 +28,7 @@ export async function GET(
         const { id: groupId } = await params;
 
         const [group] = await sql`
-            SELECT g.id, g.name, g.avatar_url, g.created_by, g.created_at, u.name AS "creator_name"
+            SELECT g.id, g.name, g.avatar_url, g.created_by, g.created_at, u.name AS "created_by_name"
             FROM groups g
             JOIN group_members gm ON gm.group_id = g.id
             JOIN users u ON u.id = g.created_by
@@ -42,7 +42,7 @@ export async function GET(
             );
 
         const members = await sql`
-            SELECT u.id, u.name, u.email,
+            SELECT u.id, u.name, u.email, u.avatar_url,
                    (u.id = ${group.created_by}) AS "isCreator"
             FROM users u
             JOIN group_members gm ON gm.user_id = u.id

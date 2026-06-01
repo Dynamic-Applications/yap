@@ -14,15 +14,15 @@ A modern, mobile-first messenger app built with Next.js, Neon (Postgres), and Ve
 
 ## Tech Stack
 
-| Layer | Tool |
-|---|---|
-| Framework | Next.js 15 (App Router) |
-| Language | TypeScript |
-| Styling | Tailwind CSS |
-| Database | Neon (serverless Postgres) |
-| ORM | Prisma (`@prisma/adapter-neon`) |
-| Auth | NextAuth.js v5 |
-| Deployment | Vercel |
+| Layer      | Tool                            |
+| ---------- | ------------------------------- |
+| Framework  | Next.js 15 (App Router)         |
+| Language   | TypeScript                      |
+| Styling    | Tailwind CSS                    |
+| Database   | Neon (serverless Postgres)      |
+| ORM        | Prisma (`@prisma/adapter-neon`) |
+| Auth       | NextAuth.js v5                  |
+| Deployment | Vercel                          |
 
 ---
 
@@ -31,28 +31,91 @@ A modern, mobile-first messenger app built with Next.js, Neon (Postgres), and Ve
 ```
 yap/
 ├── app/
-│   ├── layout.tsx              # Root layout
-│   ├── page.tsx                # Welcome / landing page  →  /
+│   ├── globals.css
+│   ├── layout.tsx
+│   ├── page.tsx
 │   ├── auth/
 │   │   ├── signin/
-│   │   │   └── page.tsx        # Sign-in page           →  /auth/signin
+│   │   │   └── page.tsx
 │   │   └── signup/
-│   │       └── page.tsx        # Sign-up page           →  /auth/signup
+│   │       └── page.tsx
+│   ├── chat/
+│   │   ├── page.tsx
+│   │   └── [friendId]/
+│   │       └── page.tsx
+│   ├── friends/
+│   │   └── page.tsx
+│   ├── profile/
+│   │   └── page.tsx
 │   └── api/
-│       └── auth/
-│           └── [...nextauth]/
-│               └── route.ts    # NextAuth API handler
+│       ├── auth/
+│       │   ├── me/
+│       │   │   └── route.ts
+│       │   ├── messages/
+│       │   │   └── route.ts
+│       │   ├── signin/
+│       │   │   └── route.ts
+│       │   ├── signout/
+│       │   │   └── route.ts
+│       │   └── signup/
+│       │       └── route.ts
+│       ├── friends/
+│       │   ├── route.ts
+│       │   ├── [friendId]/
+│       │   │   └── route.ts
+│       │   ├── request/
+│       │   │   └── route.ts
+│       │   └── respond/
+│       │       └── route.ts
+│       ├── groups/
+│       │   ├── route.ts
+│       │   ├── [id]/
+│       │   │   ├── route.ts
+│       │   │   ├── avatar/
+│       │   │   │   └── route.ts
+│       │   │   └── leave/
+│       │   │       └── route.ts
+│       │   └── avatar/
+│       │       └── route.ts
+│       ├── messages/
+│       │   └── route.ts
+│       └── user/
+│           └── avatar/
+│               └── route.ts
 ├── components/
-│   └── auth/
-│       ├── SignInForm.tsx
-│       └── SignUpForm.tsx
+│   ├── AvatarUpload.tsx
+│   ├── ChatLayout.tsx
+│   ├── CreateGroupModal.tsx
+│   ├── FriendRequests.tsx
+│   ├── GroupSettingsModal.tsx
+│   ├── MobileNav.tsx
+│   └── ui/
+│       ├── badge.tsx
+│       ├── button.tsx
+│       ├── card.tsx
+│       ├── checkbox.tsx
+│       ├── dialog.tsx
+│       ├── input.tsx
+│       ├── label.tsx
+│       ├── separator.tsx
+│       ├── sheet.tsx
+│       └── switch.tsx
 ├── lib/
-│   ├── db.ts                   # Prisma + Neon client
-│   └── auth.ts                 # NextAuth config
+│   ├── auth.ts
+│   ├── authOptions.ts
+│   ├── db.ts
+│   ├── email.ts
+│   ├── jwt.ts
+│   ├── pusher-client.ts
+│   ├── pusher.ts
+│   ├── tokenBlacklist.ts
+│   ├── users.ts
+│   └── utils.ts
+├── public/
 ├── prisma/
 │   └── schema.prisma
-├── .env                        # Local env vars (never commit)
-└── .env.example                # Env var template (safe to commit)
+├── package.json
+└── .env.example
 ```
 
 ---
@@ -193,10 +256,10 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Pages (v0.1)
 
-| Route | Description |
-|---|---|
-| `/` | Welcome / landing page |
-| `/auth/signup` | Create a new account |
+| Route          | Description                    |
+| -------------- | ------------------------------ |
+| `/`            | Welcome / landing page         |
+| `/auth/signup` | Create a new account           |
 | `/auth/signin` | Sign in to an existing account |
 
 ---

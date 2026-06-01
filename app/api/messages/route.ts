@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
             );
 
         const { userId } = verifyToken(token);
-        const { message, name, channel } = await req.json();
+        const { message, name, channel, clientMessageId } = await req.json();
 
         // Save to DB
         await sql`
@@ -21,12 +21,19 @@ export async function POST(req: NextRequest) {
             VALUES (${channel}, ${userId}, ${message})
         `;
 
-        // Trigger Pusher
+        // Retrieve sender info (to include avatar in realtime payload)
+        const [sender] = await sql`
+            SELECT name, avatar_url FROM users WHERE id = ${userId}
+        `;
+
+        // Trigger Pusher with avatar
         await pusher.trigger(channel, "message", {
             message,
             userId,
-            name,
+            name: sender?.name ?? name,
+            avatar_url: sender?.avatar_url ?? null,
             timestamp: new Date().toISOString(),
+            clientMessageId,
         });
 
         return NextResponse.json({ success: true });
@@ -47,15 +54,15 @@ export async function GET(req: NextRequest) {
                 { error: "Unauthorized" },
                 { status: 401 },
             );
-        
-         try {
-             verifyToken(token);
-         } catch {
-             return NextResponse.json(
-                 { error: "Unauthorized" },
-                 { status: 401 },
-             );
-         }
+
+        try {
+            verifyToken(token);
+        } catch {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 },
+            );
+        }
 
         const { searchParams } = new URL(req.url);
         const channel = searchParams.get("channel");
@@ -66,7 +73,7 @@ export async function GET(req: NextRequest) {
             );
 
         const messages = await sql`
-            SELECT m.id, m.message, m.created_at, m.sender_id, u.name
+            SELECT m.id, m.message, m.created_at, m.sender_id, u.name, u.avatar_url
             FROM messages m
             JOIN users u ON u.id = m.sender_id
             WHERE m.channel = ${channel}

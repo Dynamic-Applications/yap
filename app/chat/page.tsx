@@ -14,6 +14,7 @@ interface Friend {
     id: string;
     name: string;
     email: string;
+    avatar_url?: string;
 }
 
 interface Member {
@@ -241,8 +242,20 @@ function ChatPage() {
                                         : "hover:bg-gray-50"
                                 }`}
                             >
-                                <div className="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold flex-shrink-0">
-                                    {getInitials(friend.name)}
+                                <div className="h-12 w-12 rounded-full overflow-hidden flex-shrink-0">
+                                    {friend.avatar_url ? (
+                                        <Image
+                                            src={friend.avatar_url}
+                                            alt={friend.name}
+                                            width={48}
+                                            height={48}
+                                            className="object-cover w-full h-full"
+                                        />
+                                    ) : (
+                                        <div className="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                                            {getInitials(friend.name)}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-semibold">

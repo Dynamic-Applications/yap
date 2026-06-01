@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
         const { userId } = verifyToken(token);
 
         const friends = await sql`
-            SELECT u.id, u.name, u.email
+            SELECT u.id, u.name, u.email, u.avatar_url
             FROM friends f
             JOIN users u ON u.id = f.friend_id
             WHERE f.user_id = ${userId}

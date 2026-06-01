@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getPusherClient } from "@/lib/pusher-client";
 import { useRouter } from "next/navigation";
 import { UserMinus } from "lucide-react";
+import Image from "next/image";
 
 interface PendingRequest {
     id: string;
@@ -17,6 +18,7 @@ interface Friend {
     id: string;
     name: string;
     email: string;
+    avatar_url?: string | null;
 }
 
 export default function FriendRequests({ userId }: { userId: string }) {
@@ -25,8 +27,12 @@ export default function FriendRequests({ userId }: { userId: string }) {
     const [pending, setPending] = useState<PendingRequest[]>([]);
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
-    const [messageType, setMessageType] = useState<"success" | "error" | null>(null);
-    const [pendingUnfriendId, setPendingUnfriendId] = useState<string | null>(null);
+    const [messageType, setMessageType] = useState<"success" | "error" | null>(
+        null,
+    );
+    const [pendingUnfriendId, setPendingUnfriendId] = useState<string | null>(
+        null,
+    );
     const router = useRouter();
 
     const pendingUnfriend = friends.find((f) => f.id === pendingUnfriendId);
@@ -130,7 +136,9 @@ export default function FriendRequests({ userId }: { userId: string }) {
             method: "DELETE",
         });
         if (res.ok) {
-            setFriends((prev) => prev.filter((f) => f.id !== pendingUnfriendId));
+            setFriends((prev) =>
+                prev.filter((f) => f.id !== pendingUnfriendId),
+            );
         }
         setPendingUnfriendId(null);
     };
@@ -159,7 +167,9 @@ export default function FriendRequests({ userId }: { userId: string }) {
                         </button>
                     </form>
                     {message && (
-                        <p className={`text-sm mt-2 ${messageType === "success" ? "text-green-600" : "text-red-500"}`}>
+                        <p
+                            className={`text-sm mt-2 ${messageType === "success" ? "text-green-600" : "text-red-500"}`}
+                        >
                             {message}
                         </p>
                     )}
@@ -168,7 +178,9 @@ export default function FriendRequests({ userId }: { userId: string }) {
                 {/* Pending requests */}
                 {pending.length > 0 && (
                     <div>
-                        <h2 className="text-lg font-semibold mb-4">Friend Requests</h2>
+                        <h2 className="text-lg font-semibold mb-4">
+                            Friend Requests
+                        </h2>
                         <div className="space-y-3">
                             {pending.map((req) => (
                                 <div
@@ -176,18 +188,26 @@ export default function FriendRequests({ userId }: { userId: string }) {
                                     className="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-white"
                                 >
                                     <div>
-                                        <p className="text-sm font-medium">{req.name}</p>
-                                        <p className="text-xs text-gray-400">{req.email}</p>
+                                        <p className="text-sm font-medium">
+                                            {req.name}
+                                        </p>
+                                        <p className="text-xs text-gray-400">
+                                            {req.email}
+                                        </p>
                                     </div>
                                     <div className="flex gap-2">
                                         <button
-                                            onClick={() => respond(req.id, "accept")}
+                                            onClick={() =>
+                                                respond(req.id, "accept")
+                                            }
                                             className="px-3 py-1 bg-green-500 text-white rounded-md text-xs font-medium hover:bg-green-600"
                                         >
                                             Accept
                                         </button>
                                         <button
-                                            onClick={() => respond(req.id, "reject")}
+                                            onClick={() =>
+                                                respond(req.id, "reject")
+                                            }
                                             className="px-3 py-1 bg-gray-100 text-gray-600 rounded-md text-xs font-medium hover:bg-gray-200"
                                         >
                                             Decline
@@ -216,19 +236,43 @@ export default function FriendRequests({ userId }: { userId: string }) {
                                     className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-white"
                                 >
                                     <div
-                                        onClick={() => router.push(`/chat?friendId=${friend.id}`)}
+                                        onClick={() =>
+                                            router.push(
+                                                `/chat?friendId=${friend.id}`,
+                                            )
+                                        }
                                         className="flex items-center gap-3 flex-1 cursor-pointer"
                                     >
-                                        <div className="h-9 w-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
-                                            {friend.name.charAt(0).toUpperCase()}
+                                        <div className="h-9 w-9 rounded-full overflow-hidden flex-shrink-0">
+                                            {friend.avatar_url ? (
+                                                <Image
+                                                    src={friend.avatar_url}
+                                                    alt={friend.name}
+                                                    width={36}
+                                                    height={36}
+                                                    className="object-cover w-full h-full"
+                                                />
+                                            ) : (
+                                                <div className="h-9 w-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold">
+                                                    {friend.name
+                                                        .charAt(0)
+                                                        .toUpperCase()}
+                                                </div>
+                                            )}
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium">{friend.name}</p>
-                                            <p className="text-xs text-gray-400">{friend.email}</p>
+                                            <p className="text-sm font-medium">
+                                                {friend.name}
+                                            </p>
+                                            <p className="text-xs text-gray-400">
+                                                {friend.email}
+                                            </p>
                                         </div>
                                     </div>
                                     <button
-                                        onClick={() => setPendingUnfriendId(friend.id)}
+                                        onClick={() =>
+                                            setPendingUnfriendId(friend.id)
+                                        }
                                         aria-label={`Unfriend ${friend.name}`}
                                         className="text-gray-300 hover:text-red-400 transition-colors p-1"
                                     >

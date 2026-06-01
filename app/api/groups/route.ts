@@ -72,9 +72,10 @@ export async function GET(req: NextRequest) {
         }
 
         const groups = await sql`
-            SELECT g.id, g.name, g.avatar_url, g.created_by, g.created_at
+            SELECT g.id, g.name, g.avatar_url, g.created_by, g.created_at, u.name AS "created_by_name"
             FROM groups g
             JOIN group_members gm ON gm.group_id = g.id
+            JOIN users u ON u.id = g.created_by
             WHERE gm.user_id = ${userId}
             ORDER BY g.created_at DESC
         `;
