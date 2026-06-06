@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Moon, Sun } from "lucide-react";
 import MobileNav from "@/components/MobileNav";
 import AvatarUpload from "@/components/AvatarUpload";
 
@@ -20,6 +20,28 @@ export default function ProfilePage() {
     const [profile, setProfile] = useState<ProfileUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [theme, setTheme] = useState<"light" | "dark">("light");
+
+    useEffect(() => {
+        const savedTheme = localStorage.getItem("theme");
+        const initialTheme =
+            savedTheme === "dark"
+                ? "dark"
+                : window.matchMedia("(prefers-color-scheme: dark)").matches
+                  ? "dark"
+                  : "light";
+        setTheme(initialTheme);
+        document.documentElement.classList.remove("light", "dark");
+        document.documentElement.classList.add(initialTheme);
+    }, []);
+
+    const toggleTheme = () => {
+        const nextTheme = theme === "light" ? "dark" : "light";
+        setTheme(nextTheme);
+        localStorage.setItem("theme", nextTheme);
+        document.documentElement.classList.remove("light", "dark");
+        document.documentElement.classList.add(nextTheme);
+    };
 
     useEffect(() => {
         fetch("/api/auth/me")
@@ -89,9 +111,23 @@ export default function ProfilePage() {
 
             {/* Info card */}
             <div className="rounded-xl border border-border bg-card p-6 space-y-5">
-                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Account details
-                </h2>
+                <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        Account details
+                    </h2>
+                    <button
+                        type="button"
+                        onClick={toggleTheme}
+                        className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                    >
+                        {theme === "dark" ? (
+                            <Sun size={14} />
+                        ) : (
+                            <Moon size={14} />
+                        )}
+                        {theme === "dark" ? "Light mode" : "Dark mode"}
+                    </button>
+                </div>
                 <div className="space-y-4">
                     <div className="flex justify-between items-center py-3 border-b border-border">
                         <span className="text-sm text-muted-foreground">

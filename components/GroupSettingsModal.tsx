@@ -265,14 +265,16 @@ export default function GroupSettingsModal({
     return (
         <>
             <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-                <div className="bg-white rounded-2xl w-full max-w-sm p-6 space-y-5">
+                <div className="bg-white dark:bg-slate-950 rounded-2xl w-full max-w-sm p-6 space-y-5">
                     {/* Header */}
                     <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-semibold">Group Info</h2>
+                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                            Group Info
+                        </h2>
                         <button onClick={onClose} aria-label="Close">
                             <X
                                 size={20}
-                                className="text-gray-400 hover:text-gray-600"
+                                className="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200"
                             />
                         </button>
                     </div>
@@ -310,11 +312,11 @@ export default function GroupSettingsModal({
                                 <button
                                     onClick={() => inputRef.current?.click()}
                                     aria-label="Edit group avatar"
-                                    className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors"
+                                    className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800"
                                 >
                                     <Pencil
                                         size={11}
-                                        className="text-gray-500"
+                                        className="text-gray-500 dark:text-slate-300"
                                     />
                                 </button>
                             )}
@@ -341,7 +343,7 @@ export default function GroupSettingsModal({
                                     if (e.key === "Escape")
                                         setIsEditingName(false);
                                 }}
-                                className="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                                 placeholder="Group name"
                             />
                             <div className="flex gap-2">
@@ -354,21 +356,21 @@ export default function GroupSettingsModal({
                                 </button>
                                 <button
                                     onClick={() => setIsEditingName(false)}
-                                    className="flex-1 py-1.5 border border-gray-200 rounded-lg text-xs font-medium hover:bg-gray-50"
+                                    className="flex-1 py-1.5 border border-gray-200 rounded-lg text-xs font-medium hover:bg-gray-50 transition-colors dark:border-slate-700 dark:hover:bg-slate-800"
                                 >
                                     Cancel
                                 </button>
                             </div>
                         </div>
                     ) : (
-                        <div className="flex items-center justify-between px-4 py-2 rounded-lg border border-gray-100 bg-gray-50">
-                            <span className="text-sm font-medium text-gray-800 truncate">
+                        <div className="flex items-center justify-between px-4 py-2 rounded-lg border border-gray-100 bg-gray-50 dark:border-slate-700 dark:bg-slate-900">
+                            <span className="text-sm font-medium text-gray-800 dark:text-slate-100 truncate">
                                 {name}
                             </span>
                             {currentIsCreator && (
                                 <button
                                     onClick={startEditName}
-                                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors ml-2 flex-shrink-0"
+                                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors dark:text-slate-400 dark:hover:text-slate-200 ml-2 flex-shrink-0"
                                 >
                                     <Pencil size={11} /> Rename
                                 </button>
@@ -378,17 +380,17 @@ export default function GroupSettingsModal({
 
                     {/* Created by / created at */}
                     {(groupCreatedByName || formattedDate) && (
-                        <div className="px-4 py-2.5 rounded-lg border border-gray-100 bg-gray-50 space-y-0.5">
+                        <div className="px-4 py-2.5 rounded-lg border border-gray-100 bg-gray-50 space-y-0.5 dark:border-slate-700 dark:bg-slate-900">
                             {groupCreatedByName && (
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 dark:text-slate-400">
                                     Created by{" "}
-                                    <span className="font-medium text-gray-700">
+                                    <span className="font-medium text-gray-700 dark:text-slate-100">
                                         {groupCreatedByName}
                                     </span>
                                 </p>
                             )}
                             {formattedDate && (
-                                <p className="text-xs text-gray-400">
+                                <p className="text-xs text-gray-400 dark:text-slate-400">
                                     {formattedDate}
                                 </p>
                             )}
@@ -438,17 +440,17 @@ export default function GroupSettingsModal({
                                             <p className="text-sm font-medium truncate">
                                                 {member.name}
                                                 {isCurrentUser && (
-                                                    <span className="ml-1.5 text-xs text-gray-400 font-normal">
+                                                    <span className="ml-1.5 text-xs text-gray-400 font-normal dark:text-slate-400">
                                                         you
                                                     </span>
                                                 )}
                                             </p>
-                                            <p className="text-xs text-gray-400 truncate">
+                                            <p className="text-xs text-gray-400 truncate dark:text-slate-400">
                                                 {member.email}
                                             </p>
                                         </div>
                                         {member.isCreator ? (
-                                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-500 border border-blue-100 flex-shrink-0">
+                                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-500 border border-blue-100 flex-shrink-0 dark:bg-slate-800 dark:text-blue-200 dark:border-blue-800">
                                                 Admin
                                             </span>
                                         ) : (
@@ -502,7 +504,7 @@ export default function GroupSettingsModal({
                     {!currentIsCreator && (
                         <button
                             onClick={() => setConfirmAction({ type: "leave" })}
-                            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-red-100 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors"
+                            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-red-100 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950"
                         >
                             <LogOut size={15} />
                             Leave group
@@ -512,7 +514,7 @@ export default function GroupSettingsModal({
                     {/* Admin actions */}
                     {currentIsCreator && (
                         <div className="space-y-2">
-                            <p className="text-xs text-center text-gray-400">
+                            <p className="text-xs text-center text-gray-400 dark:text-slate-400">
                                 Transfer admin to a member before leaving the
                                 group.
                             </p>
@@ -520,7 +522,7 @@ export default function GroupSettingsModal({
                                 onClick={() =>
                                     setConfirmAction({ type: "deleteGroup" })
                                 }
-                                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-red-100 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors"
+                                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-red-100 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950"
                             >
                                 <Trash2 size={15} />
                                 Delete group
@@ -533,12 +535,14 @@ export default function GroupSettingsModal({
             {/* Confirm dialog */}
             {confirmAction && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] px-4">
-                    <div className="bg-white rounded-2xl w-full max-w-xs p-5 space-y-4 shadow-xl">
+                    <div className="bg-white dark:bg-slate-950 rounded-2xl w-full max-w-xs p-5 space-y-4 shadow-xl">
                         <div>
-                            <p className="text-sm font-semibold text-gray-900">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">
                                 {title}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">{desc}</p>
+                            <p className="text-xs text-gray-400 mt-1 dark:text-slate-400">
+                                {desc}
+                            </p>
                             {actionError && (
                                 <p className="text-xs text-red-500 mt-2">
                                     {actionError}
@@ -552,7 +556,7 @@ export default function GroupSettingsModal({
                                     setActionError("");
                                 }}
                                 disabled={actionLoading}
-                                className="flex-1 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                className="flex-1 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
                             >
                                 Cancel
                             </button>

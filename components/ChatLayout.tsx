@@ -129,11 +129,12 @@ export default function ChatLayout({
             .then((r) => r.json())
             .then((data) => {
                 if (!data.success) return;
-                setUser(data.user);
+                const currentUser = data.user;
+                setUser(currentUser);
 
                 const ch = groupId
                     ? `group-${groupId}`
-                    : [data.user.id, friendId].sort().join("-");
+                    : [currentUser.id, friendId].sort().join("-");
 
                 currentChannel = ch;
                 setChannel(ch);
@@ -179,7 +180,7 @@ export default function ChatLayout({
                                     timestamp: m.created_at,
                                     created_at: m.created_at,
                                     status:
-                                        m.sender_id === data.user.id
+                                        m.sender_id === currentUser.id
                                             ? "delivered"
                                             : undefined,
                                 })),
@@ -217,11 +218,16 @@ export default function ChatLayout({
                         created_at: data.timestamp,
                         clientMessageId: data.clientMessageId,
                         status:
-                            data.userId === user?.id ? "delivered" : undefined,
+                            data.userId === currentUser.id
+                                ? "delivered"
+                                : undefined,
                     };
 
                     setMessages((prev) => {
-                        if (data.clientMessageId && data.userId === user?.id) {
+                        if (
+                            data.clientMessageId &&
+                            data.userId === currentUser.id
+                        ) {
                             const existingIndex = prev.findIndex(
                                 (msg) =>
                                     msg.clientMessageId ===
@@ -243,7 +249,7 @@ export default function ChatLayout({
                 });
 
                 pusherChannel.bind("typing", (data: any) => {
-                    if (data.userId === user?.id) return;
+                    if (data.userId === currentUser.id) return;
 
                     setTypingUsers((prev) => {
                         if (data.typing) {
@@ -257,11 +263,11 @@ export default function ChatLayout({
                 });
 
                 pusherChannel.bind("read", (data: any) => {
-                    if (data.userId === user?.id) return;
+                    if (data.userId === currentUser.id) return;
                     setLastReadBy(data.name);
                     setMessages((prev) =>
                         prev.map((msg) =>
-                            msg.userId === user?.id
+                            msg.userId === currentUser.id
                                 ? { ...msg, status: "read" }
                                 : msg,
                         ),
@@ -273,13 +279,24 @@ export default function ChatLayout({
             if (typingTimeoutRef.current) {
                 clearTimeout(typingTimeoutRef.current);
             }
-            sendTypingStatus(false);
+
+            if (currentChannel) {
+                fetch("/api/messages/typing", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        channel: currentChannel,
+                        typing: false,
+                    }),
+                }).catch(() => {});
+            }
+
             const pusherClient = getPusherClient();
             if (currentChannel) pusherClient.unsubscribe(currentChannel);
             pusherClient.connection.unbind("connected");
             pusherClient.connection.unbind("disconnected");
         };
-    }, [friendId, groupId, sendTypingStatus, user]);
+    }, [friendId, groupId]);
 
     useEffect(() => {
         sendReadReceipt();
@@ -388,7 +405,7 @@ export default function ChatLayout({
         <main className="flex flex-col h-[calc(100vh-64px)] pb-16">
             <div className="w-full flex flex-col flex-1 overflow-hidden">
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-gray-100 bg-white flex items-center gap-3">
+                <div className="px-6 py-4 border-b border-gray-100 bg-white flex items-center gap-3 dark:border-slate-700 dark:bg-slate-950">
                     <div className="h-9 w-9 rounded-full overflow-hidden flex items-center justify-center">
                         {groupId ? (
                             groupAvatar ? (
@@ -433,7 +450,7 @@ export default function ChatLayout({
                                 (connected ? "Connected" : "Connecting...")}
                         </p>
                         {lastReadBy && !getTypingLabel() ? (
-                            <p className="text-[11px] text-gray-500">
+                            <p className="text-[11px] text-gray-500 dark:text-slate-400">
                                 Seen by {lastReadBy}
                             </p>
                         ) : null}
@@ -458,7 +475,7 @@ export default function ChatLayout({
                             <div key={msg.id} className="space-y-3">
                                 {showDateHeader && (
                                     <div className="flex justify-center">
-                                        <span className="rounded-full bg-gray-100 px-3 py-1 text-[11px] text-gray-500">
+                                        <span className="rounded-full bg-gray-100 px-3 py-1 text-[11px] text-gray-500 dark:bg-slate-800 dark:text-slate-400">
                                             {formatDateHeader(currentTimestamp)}
                                         </span>
                                     </div>
@@ -499,12 +516,12 @@ export default function ChatLayout({
                                             className={`px-4 py-2 rounded-2xl text-sm ${
                                                 isMe
                                                     ? "bg-blue-500 text-white rounded-br-sm"
-                                                    : "bg-white border border-gray-100 text-gray-800 rounded-bl-sm shadow-sm"
+                                                    : "bg-white border border-gray-100 text-gray-800 rounded-bl-sm shadow-sm dark:bg-slate-950 dark:border-slate-700 dark:text-slate-100"
                                             }`}
                                         >
                                             {msg.message}
                                         </div>
-                                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
+                                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-400 dark:text-slate-400">
                                             <span>
                                                 {formatTimeLabel(
                                                     currentTimestamp,
@@ -517,8 +534,8 @@ export default function ChatLayout({
                                                             ? "text-green-300"
                                                             : msg.status ===
                                                                 "pending"
-                                                              ? "text-gray-300"
-                                                              : "text-gray-400"
+                                                              ? "text-gray-300 dark:text-slate-500"
+                                                              : "text-gray-400 dark:text-slate-400"
                                                     }`}
                                                 >
                                                     {msg.status ===
@@ -564,7 +581,7 @@ export default function ChatLayout({
                 {/* Input */}
                 <form
                     onSubmit={sendMessage}
-                    className="p-4 border-t border-gray-100"
+                    className="p-4 border-t border-gray-100 dark:border-slate-700"
                 >
                     <div className="flex gap-2 items-center">
                         {user && (
@@ -584,7 +601,7 @@ export default function ChatLayout({
                                 )}
                             </div>
                         )}
-                        <div className="flex-1 flex items-center gap-2 rounded-lg border border-gray-200 px-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all">
+                        <div className="flex-1 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all dark:border-slate-700 dark:bg-slate-950">
                             <input
                                 type="text"
                                 value={newMessage}
@@ -602,7 +619,7 @@ export default function ChatLayout({
                             <button
                                 type="button"
                                 onClick={() => setShowEmoji((prev) => !prev)}
-                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                                className="text-gray-400 hover:text-gray-600 transition-colors dark:text-slate-400 dark:hover:text-slate-200"
                             >
                                 <Smile size={20} />
                             </button>
@@ -613,7 +630,7 @@ export default function ChatLayout({
                             className={`px-5 py-3 rounded-lg font-medium transition-all ${
                                 connected && user
                                     ? "bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700 shadow-sm"
-                                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                    : "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500"
                             }`}
                         >
                             Send

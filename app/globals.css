@@ -3,19 +3,77 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+    --background: #ffffff;
+    --foreground: #171717;
+    --border: #e5e7eb;
+    --card: #ffffff;
+    --card-foreground: #111827;
+    --muted: #f8fafc;
+    --input: #f8fafc;
+    --ring: #93c5fd;
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --accent: #22c55e;
+    --accent-foreground: #ffffff;
+}
+
+html.light {
+    --background: #ffffff;
+    --foreground: #171717;
+    --border: #e5e7eb;
+    --card: #ffffff;
+    --card-foreground: #111827;
+    --muted: #f8fafc;
+    --input: #f8fafc;
+    --ring: #93c5fd;
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --accent: #22c55e;
+    --accent-foreground: #ffffff;
+}
+
+html.dark {
+    --background: #020617;
+    --foreground: #e2e8f0;
+    --border: #334155;
+    --card: #0f172a;
+    --card-foreground: #f8fafc;
+    --muted: #1f2937;
+    --input: #111827;
+    --ring: #60a5fa;
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    --destructive: #f87171;
+    --destructive-foreground: #ffffff;
+    --accent: #22c55e;
+    --accent-foreground: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+    :root {
+        --background: #020617;
+        --foreground: #e2e8f0;
+        --border: #334155;
+        --card: #0f172a;
+        --card-foreground: #f8fafc;
+        --muted: #1f2937;
+        --input: #111827;
+        --ring: #60a5fa;
+        --primary: #3b82f6;
+        --primary-foreground: #ffffff;
+        --destructive: #f87171;
+        --destructive-foreground: #ffffff;
+        --accent: #22c55e;
+        --accent-foreground: #ffffff;
+    }
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+    color: var(--foreground);
+    background: var(--background);
+    font-family: Arial, Helvetica, sans-serif;
 }

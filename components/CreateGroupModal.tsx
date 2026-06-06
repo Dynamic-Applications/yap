@@ -128,14 +128,16 @@ export default function CreateGroupModal({
         <>
             {/* ── Main modal ───────────────────────────────────────────────── */}
             <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-                <div className="bg-white rounded-2xl w-full max-w-sm p-6 space-y-4">
+                <div className="bg-white dark:bg-slate-950 rounded-2xl w-full max-w-sm p-6 space-y-4">
                     {/* Header */}
                     <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-semibold">New Group</h2>
+                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                            New Group
+                        </h2>
                         <button onClick={onClose} aria-label="Close">
                             <X
                                 size={20}
-                                className="text-gray-400 hover:text-gray-600"
+                                className="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200"
                             />
                         </button>
                     </div>
@@ -165,7 +167,7 @@ export default function CreateGroupModal({
                             <button
                                 onClick={() => inputRef.current?.click()}
                                 aria-label="Edit group avatar"
-                                className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors"
+                                className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors dark:bg-slate-900 dark:border-slate-700 dark:hover:bg-slate-800"
                             >
                                 <Pencil size={11} className="text-gray-500" />
                             </button>
@@ -192,7 +194,7 @@ export default function CreateGroupModal({
                                     if (e.key === "Escape")
                                         setIsEditingName(false);
                                 }}
-                                className="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                                 placeholder="Group name"
                             />
                             <div className="flex gap-2">
@@ -204,7 +206,7 @@ export default function CreateGroupModal({
                                 </button>
                                 <button
                                     onClick={() => setIsEditingName(false)}
-                                    className="flex-1 py-1.5 border border-gray-200 rounded-lg text-xs font-medium hover:bg-gray-50"
+                                    className="flex-1 py-1.5 border border-gray-200 rounded-lg text-xs font-medium hover:bg-gray-50 transition-colors dark:border-slate-700 dark:hover:bg-slate-800"
                                 >
                                     Cancel
                                 </button>
@@ -212,13 +214,13 @@ export default function CreateGroupModal({
                         </div>
                     ) : name ? (
                         /* Named — show label + rename button */
-                        <div className="flex items-center justify-between px-4 py-2 rounded-lg border border-gray-100 bg-gray-50">
-                            <span className="text-sm font-medium text-gray-800">
+                        <div className="flex items-center justify-between px-4 py-2 rounded-lg border border-gray-100 bg-gray-50 dark:border-slate-700 dark:bg-slate-900">
+                            <span className="text-sm font-medium text-gray-800 dark:text-slate-100">
                                 {name}
                             </span>
                             <button
                                 onClick={startEditName}
-                                className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                                className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors dark:text-slate-400 dark:hover:text-slate-200"
                             >
                                 <Pencil size={11} /> Rename
                             </button>
@@ -230,7 +232,7 @@ export default function CreateGroupModal({
                             placeholder="Group name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                         />
                     )}
 
@@ -244,7 +246,7 @@ export default function CreateGroupModal({
                                 {selectedFriends.map((f, i) => (
                                     <div
                                         key={f.id}
-                                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-blue-50 border border-blue-100"
+                                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-blue-50 border border-blue-100 dark:bg-slate-800 dark:border-slate-700"
                                     >
                                         <div className="h-6 w-6 rounded-full overflow-hidden flex-shrink-0">
                                             {f.avatar_url ? (
@@ -287,8 +289,8 @@ export default function CreateGroupModal({
                                 onClick={() => toggle(friend.id)}
                                 className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
                                     selected.includes(friend.id)
-                                        ? "bg-blue-50 border border-blue-200"
-                                        : "hover:bg-gray-50 border border-transparent"
+                                        ? "bg-blue-50 border border-blue-200 dark:bg-slate-800 dark:border-slate-700"
+                                        : "hover:bg-gray-50 border border-transparent dark:hover:bg-slate-800"
                                 }`}
                             >
                                 <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0">
@@ -312,7 +314,7 @@ export default function CreateGroupModal({
                                     <p className="text-sm font-medium truncate">
                                         {friend.name}
                                     </p>
-                                    <p className="text-xs text-gray-400 truncate">
+                                    <p className="text-xs text-gray-400 dark:text-slate-400 truncate">
                                         {friend.email}
                                     </p>
                                 </div>

@@ -155,7 +155,7 @@ export default function FriendRequests({ userId }: { userId: string }) {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="Enter their email"
-                            className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="flex-1 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                             required
                         />
                         <button
@@ -185,13 +185,13 @@ export default function FriendRequests({ userId }: { userId: string }) {
                             {pending.map((req) => (
                                 <div
                                     key={req.id}
-                                    className="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-white"
+                                    className="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-white dark:border-slate-700 dark:bg-slate-950"
                                 >
                                     <div>
-                                        <p className="text-sm font-medium">
+                                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                                             {req.name}
                                         </p>
-                                        <p className="text-xs text-gray-400">
+                                        <p className="text-xs text-gray-400 dark:text-slate-400">
                                             {req.email}
                                         </p>
                                     </div>
@@ -208,7 +208,7 @@ export default function FriendRequests({ userId }: { userId: string }) {
                                             onClick={() =>
                                                 respond(req.id, "reject")
                                             }
-                                            className="px-3 py-1 bg-gray-100 text-gray-600 rounded-md text-xs font-medium hover:bg-gray-200"
+                                            className="px-3 py-1 bg-gray-100 text-gray-600 rounded-md text-xs font-medium hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                                         >
                                             Decline
                                         </button>
@@ -233,7 +233,7 @@ export default function FriendRequests({ userId }: { userId: string }) {
                             {friends.map((friend) => (
                                 <div
                                     key={friend.id}
-                                    className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-white"
+                                    className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-white dark:border-slate-700 dark:bg-slate-950"
                                 >
                                     <div
                                         onClick={() =>
@@ -288,19 +288,19 @@ export default function FriendRequests({ userId }: { userId: string }) {
             {/* Unfriend confirmation dialog */}
             {pendingUnfriendId && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-                    <div className="bg-white rounded-2xl w-full max-w-xs p-5 space-y-4 shadow-xl">
+                    <div className="bg-white rounded-2xl w-full max-w-xs p-5 space-y-4 shadow-xl dark:bg-slate-950">
                         <div>
-                            <p className="text-sm font-semibold text-gray-900">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">
                                 Unfriend {pendingUnfriend?.name}?
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-xs text-gray-400 dark:text-slate-400 mt-1">
                                 You'll need to send a new request to reconnect.
                             </p>
                         </div>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setPendingUnfriendId(null)}
-                                className="flex-1 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                                className="flex-1 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:border-slate-700 dark:hover:bg-slate-800 transition-colors"
                             >
                                 Cancel
                             </button>

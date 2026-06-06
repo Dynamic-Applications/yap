@@ -27,7 +27,7 @@ export default function MobileNav() {
     }, []);
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 flex items-center justify-around bg-white border-t border-gray-100 pb-6 pt-2 z-50">
+        <nav className="fixed bottom-0 left-0 right-0 flex items-center justify-around bg-white dark:bg-slate-950 border-t border-gray-100 dark:border-slate-700 pb-6 pt-2 z-50">
             {tabs.map(({ label, icon: Icon, href }) => {
                 const active = pathname.startsWith(href);
                 return (
@@ -51,14 +51,20 @@ export default function MobileNav() {
                             <Icon
                                 size={24}
                                 className={
-                                    active ? "text-green-600" : "text-gray-400"
+                                    active
+                                        ? "text-green-600 dark:text-green-400"
+                                        : "text-gray-400 dark:text-slate-500"
                                 }
                                 strokeWidth={active ? 2 : 1.5}
                             />
                         )}
                         {label !== "Profile" && (
                             <span
-                                className={`text-[11px] ${active ? "text-green-600 font-medium" : "text-gray-400"}`}
+                                className={`text-[11px] ${
+                                    active
+                                        ? "text-green-600 dark:text-green-400 font-medium"
+                                        : "text-gray-400 dark:text-slate-500"
+                                }`}
                             >
                                 {label}
                             </span>
