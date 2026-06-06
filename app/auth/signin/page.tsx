@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react"
+import { Suspense } from "react";
+import { LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -109,6 +110,18 @@ function AuthPage() {
                     >
                         Sign up
                     </button>
+                </div>
+
+                <div className="mb-6">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-center gap-2 border-gray-200 bg-white text-slate-900 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900"
+                        onClick={() => router.push("/api/auth/google")}
+                    >
+                        <LogIn size={18} />
+                        Continue with Google
+                    </Button>
                 </div>
 
                 {tab === "signin" && (

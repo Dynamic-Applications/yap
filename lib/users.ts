@@ -92,12 +92,13 @@ export async function createUser(
     email: string,
     name: string,
     password: string,
+    avatarUrl?: string,
 ): Promise<SafeUser> {
     await createTable();
     const passwordHash = await bcrypt.hash(password, 10);
     const rows = await sql`
-        INSERT INTO users (email, name, password_hash)
-        VALUES (${email.toLowerCase().trim()}, ${name.trim()}, ${passwordHash})
+        INSERT INTO users (email, name, password_hash, avatar_url)
+        VALUES (${email.toLowerCase().trim()}, ${name.trim()}, ${passwordHash}, ${avatarUrl ?? null})
         RETURNING id, email, name, avatar_url, role, created_at
     `;
     return {
@@ -148,7 +149,6 @@ export interface SafeUser {
     role: "User" | "Admin" | "SuperAdmin";
     createdAt: string;
 }
-
 
 export async function updateUserRole(
     id: string,
