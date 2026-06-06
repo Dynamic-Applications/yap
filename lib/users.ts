@@ -8,6 +8,8 @@ export interface User {
     email: string;
     name: string;
     passwordHash: string;
+    avatarUrl?: string;
+    role: "User" | "Admin" | "SuperAdmin";
     createdAt: string;
 }
 
@@ -15,6 +17,8 @@ export interface SafeUser {
     id: string;
     email: string;
     name: string;
+    avatarUrl?: string;
+    role: "User" | "Admin" | "SuperAdmin";
     createdAt: string;
 }
 
@@ -93,7 +97,7 @@ export async function createUser(
     name: string,
     password: string,
     avatarUrl?: string,
-): Promise<SafeUser> {
+): Promise<User> {
     await createTable();
     const passwordHash = await bcrypt.hash(password, 10);
     const rows = await sql`
@@ -105,6 +109,7 @@ export async function createUser(
         id: rows[0].id,
         email: rows[0].email,
         name: rows[0].name,
+        passwordHash,
         avatarUrl: rows[0].avatar_url ?? undefined,
         role: rows[0].role,
         createdAt: rows[0].created_at,
@@ -127,27 +132,9 @@ export async function verifyPassword(
 }
 
 export function safeUser(user: User): SafeUser {
-    const { passwordHash: _, ...safe } = user;
+    const { passwordHash, ...safe } = user;
+    void passwordHash;
     return safe;
-}
-
-export interface User {
-    id: string;
-    email: string;
-    name: string;
-    passwordHash: string;
-    avatarUrl?: string;
-    role: "User" | "Admin" | "SuperAdmin";
-    createdAt: string;
-}
-
-export interface SafeUser {
-    id: string;
-    email: string;
-    name: string;
-    avatarUrl?: string;
-    role: "User" | "Admin" | "SuperAdmin";
-    createdAt: string;
 }
 
 export async function updateUserRole(
