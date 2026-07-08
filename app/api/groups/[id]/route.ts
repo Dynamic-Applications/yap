@@ -144,8 +144,8 @@ export async function PATCH(
     }
 }
 
-// DELETE /api/groups/[id] — remove a member from a group
-// Body: { memberId: string }
+// DELETE /api/groups/[id] — remove a member from a group or delete the group entirely
+// Body: { memberId?: string, deleteGroup?: boolean }
 // Auto-deletes the group if no members remain after removal.
 export async function DELETE(
     req: NextRequest,
@@ -170,7 +170,39 @@ export async function DELETE(
         }
 
         const { id: groupId } = await params;
-        const { memberId } = await req.json();
+
+        let payload: { memberId?: string; deleteGroup?: boolean } = {};
+        try {
+            payload = await req.json();
+        } catch {
+            payload = {};
+        }
+
+        const { memberId, deleteGroup } = payload;
+
+        if (deleteGroup) {
+            const [group] = await sql`
+                SELECT id, created_by FROM groups
+                WHERE id = ${groupId}
+            `;
+            if (!group)
+                return NextResponse.json(
+                    { error: "Group not found" },
+                    { status: 404 },
+                );
+
+            if (group.created_by !== userId)
+                return NextResponse.json(
+                    { error: "Only the group creator can delete the group" },
+                    { status: 403 },
+                );
+
+            await sql`DELETE FROM messages WHERE channel = ${groupId}`;
+            await sql`DELETE FROM group_members WHERE group_id = ${groupId}`;
+            await sql`DELETE FROM groups WHERE id = ${groupId}`;
+
+            return NextResponse.json({ success: true, groupDeleted: true });
+        }
 
         if (!memberId)
             return NextResponse.json(

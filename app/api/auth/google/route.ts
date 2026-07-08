@@ -4,7 +4,11 @@ const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 
 export async function GET(req: NextRequest) {
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    const redirectUri = `${req.nextUrl.origin}/api/auth/google/callback`;
+    // Use the callback path that matches the Google Console setting.
+    // If you changed the Authorized Redirect URI to `/api/auth/callback/google`,
+    // make sure the redirect here matches exactly.
+    const redirectUri = `${req.nextUrl.origin}/api/auth/callback/google`;
+    console.log("Google auth redirect_uri:", redirectUri);
 
     if (!clientId) {
         return NextResponse.json(

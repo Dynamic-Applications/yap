@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
     }
 
     const redirectUri = `${host}/api/auth/callback/google`;
+
     const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
         method: "POST",
         headers: {
