@@ -12,14 +12,37 @@ import { Label } from "@/components/ui/label";
 function AuthPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const authError = searchParams.get("error");
+    const authErrorDescription = searchParams.get("error_description");
     const [tab, setTab] = useState<"signin" | "signup">(
-        searchParams.get("email") ? "signup" : "signin"
+        searchParams.get("email") ? "signup" : "signin",
     );
     const [email, setEmail] = useState(searchParams.get("email") ?? "");
     const [password, setPassword] = useState("");
     const [name, setName] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const displayError =
+        error ||
+        (() => {
+            if (authError === "google-config-missing") {
+                return "Google OAuth is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to your environment and restart the app.";
+            }
+            if (authError === "google-token-exchange-failed") {
+                return "Google sign-in failed while exchanging the authorization code. Check your Google OAuth redirect URI and client settings.";
+            }
+            if (authError === "google-userinfo-failed") {
+                return "Google sign-in failed while loading your profile information.";
+            }
+            if (authError === "google-user-creation-failed") {
+                return "Google sign-in failed while creating your account.";
+            }
+            if (authErrorDescription) {
+                return authErrorDescription;
+            }
+            return "";
+        })();
 
     const handleSignIn = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -112,12 +135,20 @@ function AuthPage() {
                     </button>
                 </div>
 
+                {displayError && (
+                    <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+                        {displayError}
+                    </div>
+                )}
+
                 <div className="mb-6">
                     <Button
                         type="button"
                         variant="outline"
                         className="w-full justify-center gap-2 border-gray-200 bg-white text-slate-900 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900"
-                        onClick={() => router.push("/api/auth/google")}
+                        onClick={() => {
+                            window.location.assign("/api/auth/google");
+                        }}
                     >
                         <LogIn size={18} />
                         Continue with Google
@@ -166,8 +197,10 @@ function AuthPage() {
                             </button>
                         </div>
 
-                        {error && (
-                            <p className="text-sm text-red-500">{error}</p>
+                        {displayError && (
+                            <p className="text-sm text-red-500">
+                                {displayError}
+                            </p>
                         )}
 
                         <Button
@@ -216,8 +249,10 @@ function AuthPage() {
                             />
                         </div>
 
-                        {error && (
-                            <p className="text-sm text-red-500">{error}</p>
+                        {displayError && (
+                            <p className="text-sm text-red-500">
+                                {displayError}
+                            </p>
                         )}
 
                         <Button
@@ -239,5 +274,5 @@ export default function Page() {
         <Suspense>
             <AuthPage />
         </Suspense>
-    )
+    );
 }

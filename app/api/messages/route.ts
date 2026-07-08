@@ -36,6 +36,47 @@ export async function POST(req: NextRequest) {
             clientMessageId,
         });
 
+        // Also notify individual users on their personal channels so the app
+        // can show a global unread counter and notifications when they're not
+        // actively viewing the chat.
+        try {
+            if (channel.startsWith("group-")) {
+                const groupId = channel.replace("group-", "");
+                const members = await sql`
+                    SELECT user_id FROM group_members WHERE group_id = ${groupId}
+                `;
+                for (const m of members) {
+                    if (m.user_id === userId) continue;
+                    await pusher.trigger(`user-${m.user_id}`, "message", {
+                        channel,
+                        message,
+                        userId,
+                        name: sender?.name ?? name,
+                        avatar_url: sender?.avatar_url ?? null,
+                        timestamp: new Date().toISOString(),
+                        clientMessageId,
+                    });
+                }
+            } else {
+                // direct message channel: {id1}-{id2}
+                const parts = String(channel).split("-");
+                const recipient = parts.find((p) => p !== userId);
+                if (recipient) {
+                    await pusher.trigger(`user-${recipient}`, "message", {
+                        channel,
+                        message,
+                        userId,
+                        name: sender?.name ?? name,
+                        avatar_url: sender?.avatar_url ?? null,
+                        timestamp: new Date().toISOString(),
+                        clientMessageId,
+                    });
+                }
+            }
+        } catch (err) {
+            console.error("Failed to send user-level notifications:", err);
+        }
+
         return NextResponse.json({ success: true });
     } catch (err) {
         console.error(err);

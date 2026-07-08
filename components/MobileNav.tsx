@@ -4,6 +4,7 @@ import { MessageCircle, Users, UserCircle } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useNotifications } from "@/components/NotificationProvider";
 
 const tabs = [
     { label: "Chats", icon: MessageCircle, href: "/chat" },
@@ -15,6 +16,14 @@ export default function MobileNav() {
     const pathname = usePathname();
     const router = useRouter();
     const [avatar, setAvatar] = useState<string | null>(null);
+    const [isActive, setIsActive] = useState(false);
+    const notifications = (() => {
+        try {
+            return useNotifications();
+        } catch {
+            return null;
+        }
+    })();
 
     useEffect(() => {
         fetch("/api/auth/me")
@@ -22,6 +31,28 @@ export default function MobileNav() {
             .then((data) => {
                 if (data?.success && data.user?.avatar_url)
                     setAvatar(data.user.avatar_url);
+                if (data?.success && data.user?.id) {
+                    try {
+                        const pusher =
+                            require("@/lib/pusher-client").getPusherClient();
+                        const updatePresence = () => {
+                            setIsActive(document.visibilityState === "visible");
+                        };
+                        updatePresence();
+                        document.addEventListener(
+                            "visibilitychange",
+                            updatePresence,
+                        );
+                        window.addEventListener("focus", updatePresence);
+                        window.addEventListener("blur", updatePresence);
+                        pusher.connection.bind("connected", () =>
+                            setIsActive(true),
+                        );
+                        pusher.connection.bind("disconnected", () =>
+                            setIsActive(false),
+                        );
+                    } catch {}
+                }
             })
             .catch(() => {});
     }, []);
@@ -39,13 +70,17 @@ export default function MobileNav() {
                     >
                         {label === "Profile" && avatar ? (
                             <div className="relative h-9 w-9 rounded-full overflow-hidden">
-                                <Image
-                                    src={avatar}
-                                    alt="Profile"
-                                    fill
-                                    sizes="36px"
-                                    className="object-cover"
-                                />
+                                <div
+                                    className={`h-full w-full rounded-full ${isActive ? "ring-2 ring-green-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-950" : ""}`}
+                                >
+                                    <Image
+                                        src={avatar}
+                                        alt="Profile"
+                                        fill
+                                        sizes="36px"
+                                        className="object-cover rounded-full"
+                                    />
+                                </div>
                             </div>
                         ) : (
                             <Icon
@@ -59,14 +94,23 @@ export default function MobileNav() {
                             />
                         )}
                         {label !== "Profile" && (
-                            <span
-                                className={`text-[11px] ${
-                                    active
-                                        ? "text-green-600 dark:text-green-400 font-medium"
-                                        : "text-gray-400 dark:text-slate-500"
-                                }`}
-                            >
-                                {label}
+                            <span className="relative">
+                                <span
+                                    className={`text-[11px] ${
+                                        active
+                                            ? "text-green-600 dark:text-green-400 font-medium"
+                                            : "text-gray-400 dark:text-slate-500"
+                                    }`}
+                                >
+                                    {label}
+                                </span>
+                                {label === "Chats" &&
+                                    notifications &&
+                                    notifications.totalUnread > 0 && (
+                                        <span className="absolute -top-2 -right-4 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium leading-none text-white rounded-full bg-red-600">
+                                            {notifications.totalUnread}
+                                        </span>
+                                    )}
                             </span>
                         )}
                     </button>

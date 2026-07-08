@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Check, Loader2 } from "lucide-react";
 import { getPusherClient } from "@/lib/pusher-client";
+import { useNotifications } from "@/components/NotificationProvider";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import { Smile } from "lucide-react";
 
@@ -51,6 +52,13 @@ export default function ChatLayout({
     const lastReadSentAtRef = useRef<string | null>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
     const emojiRef = useRef<HTMLDivElement>(null);
+    const notifications = (() => {
+        try {
+            return useNotifications();
+        } catch {
+            return null;
+        }
+    })();
 
     const formatDateHeader = (timestamp: string) => {
         const date = new Date(timestamp);
@@ -275,6 +283,8 @@ export default function ChatLayout({
                 });
             });
 
+        // when we open this chat, mark it read (handled below via channel state)
+
         return () => {
             if (typingTimeoutRef.current) {
                 clearTimeout(typingTimeoutRef.current);
@@ -297,6 +307,19 @@ export default function ChatLayout({
             pusherClient.connection.unbind("disconnected");
         };
     }, [friendId, groupId]);
+
+    // mark channel read when it becomes active or when page becomes visible
+    useEffect(() => {
+        if (!channel || !notifications) return;
+        notifications.markChannelRead(channel);
+
+        const onVisibility = () => {
+            if (!document.hidden) notifications.markChannelRead(channel);
+        };
+        document.addEventListener("visibilitychange", onVisibility);
+        return () =>
+            document.removeEventListener("visibilitychange", onVisibility);
+    }, [channel, notifications]);
 
     useEffect(() => {
         sendReadReceipt();
@@ -480,38 +503,45 @@ export default function ChatLayout({
                                         </span>
                                     </div>
                                 )}
-
                                 <div
                                     className={`flex items-end gap-2 ${
                                         isMe ? "flex-row-reverse" : "flex-row"
                                     }`}
                                 >
-                                    <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0">
-                                        {msg.avatar_url ? (
-                                            <Image
-                                                src={msg.avatar_url}
-                                                alt={msg.name}
-                                                width={32}
-                                                height={32}
-                                                className="object-cover w-full h-full"
-                                            />
-                                        ) : (
-                                            <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold">
-                                                {getInitials(msg.name)}
-                                            </div>
-                                        )}
-                                    </div>
+                                    {groupId && (
+                                        <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0">
+                                            {msg.avatar_url ? (
+                                                <Image
+                                                    src={msg.avatar_url}
+                                                    alt={msg.name}
+                                                    width={32}
+                                                    height={32}
+                                                    className="object-cover w-full h-full"
+                                                />
+                                            ) : (
+                                                <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold">
+                                                    {getInitials(msg.name)}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     <div
                                         className={`max-w-[70%] flex flex-col gap-1 ${
                                             isMe ? "items-end" : "items-start"
                                         }`}
                                     >
-                                        {groupId && !isMe && (
-                                            <span className="text-[11px] text-gray-400">
-                                                {msg.name}
-                                            </span>
-                                        )}
+                                        {groupId &&
+                                            !isMe &&
+                                            (index === messages.length - 1 ||
+                                                (messages[index + 1] &&
+                                                    messages[index + 1]
+                                                        .userId !==
+                                                        msg.userId)) && (
+                                                <span className="text-[11px] text-gray-400">
+                                                    {msg.name}
+                                                </span>
+                                            )}
                                         <div
                                             className={`px-4 py-2 rounded-2xl text-sm ${
                                                 isMe

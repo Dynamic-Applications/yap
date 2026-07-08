@@ -6,6 +6,7 @@
         "dev": "next dev",
         "build": "next build",
         "start": "NODE_ENV=production ts-node --project tsconfig.server.json server.ts",
+        "prune:messages": "ts-node scripts/prune_messages.ts",
         "lint": "next lint"
     },
     "dependencies": {
