@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
     // make sure the redirect here matches exactly.
     const redirectUri = `${req.nextUrl.origin}/api/auth/callback/google`;
     console.log("Google auth redirect_uri:", redirectUri);
+    console.log("Google client ID (env):", clientId);
 
     if (!clientId) {
         return NextResponse.json(
@@ -26,5 +27,8 @@ export async function GET(req: NextRequest) {
         access_type: "offline",
     });
 
-    return NextResponse.redirect(`${GOOGLE_AUTH_URL}?${params.toString()}`);
+    const fullUrl = `${GOOGLE_AUTH_URL}?${params.toString()}`;
+    console.log("Redirecting to Google URL:", fullUrl);
+
+    return NextResponse.redirect(fullUrl);
 }

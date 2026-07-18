@@ -120,12 +120,20 @@ export async function GET(req: NextRequest) {
     try {
         let user = await findUserByEmail(email);
         if (!user) {
-            user = await createUser(
-                email,
-                name,
-                crypto.randomUUID(),
-                avatarUrl,
-            );
+            try {
+                user = await createUser(
+                    email,
+                    name,
+                    crypto.randomUUID(),
+                    avatarUrl,
+                );
+            } catch (createErr) {
+                console.error(
+                    "Error creating user from Google profile:",
+                    createErr?.stack ?? createErr,
+                );
+                throw createErr;
+            }
         }
 
         const token = signToken(user.id);

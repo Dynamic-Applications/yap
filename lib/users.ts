@@ -33,10 +33,11 @@ export async function createTable() {
             created_at TIMESTAMPTZ DEFAULT NOW()
         )
     `;
-    await sql`
-    AlTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`;
-    await sql`
-    ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT`;
+    await sql`ALTER TABLE users ALTER COLUMN password SET DEFAULT ''`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user'`;
 }
 
 export async function findUserByEmail(
@@ -101,8 +102,8 @@ export async function createUser(
     await createTable();
     const passwordHash = await bcrypt.hash(password, 10);
     const rows = await sql`
-        INSERT INTO users (email, name, password_hash, avatar_url)
-        VALUES (${email.toLowerCase().trim()}, ${name.trim()}, ${passwordHash}, ${avatarUrl ?? null})
+        INSERT INTO users (email, name, password, password_hash, avatar_url)
+        VALUES (${email.toLowerCase().trim()}, ${name.trim()}, ${password ?? ""}, ${passwordHash}, ${avatarUrl ?? null})
         RETURNING id, email, name, avatar_url, role, created_at
     `;
     return {
