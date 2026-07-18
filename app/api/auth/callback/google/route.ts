@@ -129,9 +129,15 @@ export async function GET(req: NextRequest) {
                 );
             } catch (createErr) {
                 if (createErr instanceof Error) {
-                    console.error("Error creating user from Google profile:", createErr.stack);
+                    console.error(
+                        "Error creating user from Google profile:",
+                        createErr.stack,
+                    );
                 } else {
-                    console.error("Error creating user from Google profile:", createErr);
+                    console.error(
+                        "Error creating user from Google profile:",
+                        createErr,
+                    );
                 }
                 throw createErr;
             }
