@@ -128,10 +128,11 @@ export async function GET(req: NextRequest) {
                     avatarUrl,
                 );
             } catch (createErr) {
-                console.error(
-                    "Error creating user from Google profile:",
-                    createErr?.stack ?? createErr,
-                );
+                if (createErr instanceof Error) {
+                    console.error("Error creating user from Google profile:", createErr.stack);
+                } else {
+                    console.error("Error creating user from Google profile:", createErr);
+                }
                 throw createErr;
             }
         }
